@@ -21,9 +21,9 @@ export default function LoginPage() {
             const res = await fetch("/api/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ 
-                    phone, 
-                    dob: dob.split("-").reverse().join("") 
+                body: JSON.stringify({
+                    phone,
+                    dob: dob.split("-").reverse().join("")
                 }),
             });
 
@@ -48,7 +48,6 @@ export default function LoginPage() {
         }
     };
 
-    // Animation variants
     const leftPanel = {
         hidden: { opacity: 0, x: -60 },
         show: {
@@ -164,89 +163,9 @@ export default function LoginPage() {
                 }
             `}</style>
 
-            {/* ── Left panel ─────────────────────────────── */}
-            <motion.div
-                style={styles.left}
-                className="responsive-left"
-                variants={leftPanel}
-                initial="hidden"
-                animate="show"
-            >
-                {/* Animated glow orbs */}
-                <motion.div
-                    animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }}
-                    transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.div
-                    style={styles.orb2}
-                    animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.9, 0.5] }}
-                    transition={{ duration: 8, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                />
-                <motion.div
-                    style={styles.orb3}
-                    animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.7, 0.3] }}
-                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-                />
 
-                {/* Grid pattern */}
-                <div style={styles.grid} />
 
-                <motion.div
-                    style={styles.leftInner}
-                    className="responsive-left-inner"
-                    variants={stagger}
-                    initial="hidden"
-                    animate="show"
-                >
-                    {/* Logo */}
-                    <Image
-                        src="/Logo_1.png"
-                        alt="Solar Logo"
-                        width={240}
-                        height={220}
-                        style={{ borderRadius: '8px' }}
-                    />
 
-                    {/* Hero text */}
-                    <motion.div style={styles.heroBlock} className="responsive-hero-block" variants={stagger}>
-                        <motion.h2 style={styles.heroTitle} className="responsive-hero-title" variants={fadeUp}>
-                            Powering smarter<br />infrastructure.
-                        </motion.h2>
-                        <motion.p style={styles.heroSub} variants={fadeUp}>
-                            A unified platform for solar project teams — from field to boardroom.
-                        </motion.p>
-                    </motion.div>
-
-                    {/* Role pills */}
-                    <motion.div style={styles.pillRow} className="responsive-pill-row" variants={stagger}>
-                        {[
-                            { icon: "⚡", label: "Super Admin", color: "#f59e0b" },
-                            { icon: "📋", label: "Project Manager", color: "#60a5fa" },
-                            { icon: "🛠️", label: "Supervisor", color: "#34d399" },
-                        ].map((r) => (
-                            <motion.div
-                                key={r.label}
-                                style={{ ...styles.pill, borderColor: r.color + "40", color: r.color }}
-                                variants={pillVariant}
-                                whileHover={{ x: 6, transition: { duration: 0.2 } }}
-                            >
-                                <span>{r.icon}</span>
-                                <span style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "0.02em" }}>{r.label}</span>
-                            </motion.div>
-                        ))}
-                    </motion.div>
-
-                    {/* Security badge */}
-                    <motion.div style={styles.secBadge} className="responsive-sec-badge" variants={fadeUp}>
-                        <span style={{ opacity: 0.5, fontSize: "11px" }}>🔒</span>
-                        <span style={{ opacity: 0.45, fontSize: "11px", letterSpacing: "0.05em" }}>
-                            SECURED WITH JWT + BCRYPT ENCRYPTION
-                        </span>
-                    </motion.div>
-                </motion.div>
-            </motion.div>
-
-            {/* ── Right panel ────────────────────────────── */}
             <motion.div
                 style={styles.right}
                 className="responsive-right"
@@ -254,6 +173,17 @@ export default function LoginPage() {
                 initial="hidden"
                 animate="show"
             >
+                {/* Logo */}
+                <motion.div variants={fadeUp} style={{ marginBottom: "32px" }}>
+                    <Image
+                        src="/Logo_1.png"
+                        alt="Solar Logo"
+                        width={240}
+                        height={220}
+                        style={{ borderRadius: '8px', objectFit: 'contain' }}
+                        priority
+                    />
+                </motion.div>
                 <motion.div
                     style={styles.formCard}
                     className="responsive-form-card"
@@ -361,35 +291,7 @@ export default function LoginPage() {
                         </motion.div>
                     </form>
 
-                    {/* Divider */}
-                    <motion.div style={styles.divRow} variants={fadeUp}>
-                        <div style={styles.divLine} />
-                        <span style={styles.divText}>Access level is determined by your role</span>
-                        <div style={styles.divLine} />
-                    </motion.div>
 
-                    {/* Role legend */}
-                    <motion.div style={styles.legend} variants={stagger}>
-                        {[
-                            { dot: "#f59e0b", label: "Super Admin — Full platform access" },
-                            { dot: "#6366f1", label: "Project Manager — Project oversight" },
-                            { dot: "#10b981", label: "Supervisor — Field task management" },
-                        ].map((r, i) => (
-                            <motion.div
-                                key={r.label}
-                                style={styles.legendRow}
-                                variants={fadeUp}
-                                custom={i}
-                            >
-                                <motion.div
-                                    style={{ ...styles.dot, background: r.dot }}
-                                    animate={{ scale: [1, 1.4, 1] }}
-                                    transition={{ duration: 2, repeat: Infinity, delay: i * 0.6 }}
-                                />
-                                <span style={styles.legendText}>{r.label}</span>
-                            </motion.div>
-                        ))}
-                    </motion.div>
 
                 </motion.div>
             </motion.div>
@@ -522,6 +424,7 @@ const styles = {
     right: {
         flex: 1,
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
         background: "#f8fafc",

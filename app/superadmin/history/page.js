@@ -58,8 +58,48 @@ export default function PaymentHistory() {
         fetchProjects();
     }, []);
 
-    const handlePrint = () => {
-        window.print();
+    const exportToExcel = () => {
+        if (!requests || requests.length === 0) {
+            alert("No data to export");
+            return;
+        }
+
+        const headers = ["Date", "Project", "Requested By", "Approver (PM)", "Materials", "Amount", "Status"];
+        const csvRows = [];
+        csvRows.push(headers.join(","));
+
+        requests.forEach(req => {
+            const date = new Date(req.created_at).toLocaleDateString();
+            const project = req.project?.name || "";
+            const requestedBy = req.supervisor?.name || "Self";
+            const approver = req.pm?.name || "Pending/N/A";
+            const materials = req.materials.map(m => `${m.name} (x${m.quantity})`).join("; ");
+            const amount = parseFloat(req.total_amount).toString();
+            const status = req.status.replace("_", " ");
+
+            // Escape strings for CSV
+            const escapeCSV = (str) => `"${String(str).replace(/"/g, '""')}"`;
+
+            csvRows.push([
+                escapeCSV(date),
+                escapeCSV(project),
+                escapeCSV(requestedBy),
+                escapeCSV(approver),
+                escapeCSV(materials),
+                amount,
+                escapeCSV(status)
+            ].join(","));
+        });
+
+        const csvString = csvRows.join("\n");
+        const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `Payment_History_${new Date().toISOString().split("T")[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const filteredRequests = requests;
@@ -99,17 +139,17 @@ export default function PaymentHistory() {
                 
                 <div className="nav-desktop">
                     <Link href="/superadmin/dashboard" className="btn-ghost" style={{ textDecoration: "none" }}>← Back to Dashboard</Link>
-                    <button className="btn-primary" onClick={handlePrint} style={{ width: "auto", padding: "8px 20px" }}>🖨️ Print Records</button>
+                    <button className="btn-primary" onClick={exportToExcel} style={{ width: "auto", padding: "8px 20px", background: "#10b981", borderColor: "#10b981" }}>📊 Export to Excel</button>
                     <button className="btn-ghost" onClick={() => router.push("/login")}>Sign Out</button>
                 </div>
 
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                     <button 
                         className="btn-primary mobile-only-btn" 
-                        style={{ padding: "6px 14px", fontSize: "12px", width: "auto", height: "36px" }} 
-                        onClick={handlePrint}
+                        style={{ padding: "6px 14px", fontSize: "12px", width: "auto", height: "36px", background: "#10b981", borderColor: "#10b981" }} 
+                        onClick={exportToExcel}
                     >
-                        🖨️ Print
+                        📊 Export
                     </button>
                     <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)}>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

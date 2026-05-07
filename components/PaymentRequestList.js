@@ -140,7 +140,7 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                 } else {
                     setRequests(prev => prev.filter(req => {
                         // Check both ID types for clubbed vs single
-                        const groupKey = req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id;
+                        const groupKey = req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id;
                         return groupKey !== id;
                     }));
                 }
@@ -426,15 +426,15 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                                             <button
                                                 className="btn-ghost"
                                                 onClick={() => {
-                                                    const groupId = req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id;
+                                                    const groupId = req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id;
                                                     handleAction(groupId, "reject", req.isClubbed, req.requestIds, req.project_id, req.progress?.percentage || 0);
                                                 }}
                                                 style={{
                                                     color: "#64748b",
                                                     flex: 1,
                                                     whiteSpace: "nowrap",
-                                                    opacity: actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? 0.5 : 1,
-                                                    cursor: actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? 'not-allowed' : 'pointer',
+                                                    opacity: actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? 0.5 : 1,
+                                                    cursor: actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? 'not-allowed' : 'pointer',
                                                     border: '1px solid var(--border)'
                                                 }}
                                                 onMouseEnter={(e) => {
@@ -447,14 +447,14 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                                                     e.target.style.borderColor = 'var(--border)';
                                                     e.target.style.color = '#64748b';
                                                 }}
-                                                disabled={actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id)}
+                                                disabled={actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id)}
                                             >
-                                                {actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? "Processing..." : (req.isClubbed && req.requestIds?.length > 1) ? "Reject All" : "Reject"}
+                                                {actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? "Processing..." : (req.isClubbed && req.requestIds?.length > 1) ? "Reject All" : "Reject"}
                                             </button>
                                             <button
                                                 className="btn-primary"
                                                 onClick={() => {
-                                                    const groupId = req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id;
+                                                    const groupId = req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id;
                                                     handleAction(groupId, "approve", req.isClubbed, req.requestIds, req.project_id, req.progress?.percentage || 0);
                                                 }}
                                                 style={{
@@ -462,12 +462,12 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                                                     padding: "8px 20px",
                                                     flex: 1,
                                                     whiteSpace: "nowrap",
-                                                    opacity: actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? 0.5 : 1,
-                                                    cursor: actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? 'not-allowed' : 'pointer'
+                                                    opacity: actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? 0.5 : 1,
+                                                    cursor: actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? 'not-allowed' : 'pointer'
                                                 }}
-                                                disabled={actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id)}
+                                                disabled={actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id)}
                                             >
-                                                {actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? "Processing..." : (req.isClubbed && req.requestIds?.length > 1) ? "Approve All" : "Approve"}
+                                                {actionInProgress === (req.isClubbed ? (role === "PROJECT_MANAGER" ? `${req.project_id}-${req.status}-PM_GROUP` : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`) : req.id) ? "Processing..." : (req.isClubbed && req.requestIds?.length > 1) ? "Approve All" : "Approve"}
                                             </button>
                                         </>
                                     ) : null}

@@ -51,7 +51,7 @@ export async function GET(req) {
             // Project-wise clubbing for Manager
             const clubbedMap = {};
             for (const req of requests) {
-                const clubKey = `${req.project_id}-PM_GROUP`;
+                const clubKey = `${req.project_id}-${req.status}-PM_GROUP`;
                 if (!clubbedMap[clubKey]) {
                     clubbedMap[clubKey] = {
                         ...req,
@@ -186,7 +186,7 @@ export async function GET(req) {
 export async function POST(req) {
     try {
         const user = await getUser();
-        if (!user || !hasRole(user, "SUPERVISOR")) {
+        if (!user || !hasRole(user, ["SUPERVISOR", "PROJECT_MANAGER"])) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -205,11 +205,14 @@ export async function POST(req) {
         const todayEnd = new Date();
         todayEnd.setHours(23, 59, 59, 999);
 
+        const isManager = hasRole(user, "PROJECT_MANAGER");
+        const targetStatus = isManager ? "PENDING_ADMIN" : "PENDING_PM";
+
         const existingRequest = await prisma.paymentRequest.findFirst({
             where: {
                 project_id: parsedProjectId,
                 supervisor_id: user.id,
-                status: "PENDING_PM",
+                status: targetStatus,
                 created_at: {
                     gte: todayStart,
                     lte: todayEnd
@@ -249,8 +252,9 @@ export async function POST(req) {
             data: {
                 project_id: parsedProjectId,
                 supervisor_id: user.id,
+                pm_id: isManager ? user.id : null,
                 total_amount: parseFloat(total_amount),
-                status: "PENDING_PM",
+                status: targetStatus,
                 materials: {
                     create: materials.map(m => ({
                         name: m.name,

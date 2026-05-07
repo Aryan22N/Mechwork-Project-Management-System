@@ -136,22 +136,22 @@ export default function SupervisorDashboard() {
                             >
                                 📊 Project Progress & Notes
                             </button>
-                             <button
-                                 style={navBtnStyle}
-                                 onClick={() => router.push("/supervisor/dashboard/add-bill")}
-                                 onMouseEnter={(e) => {
-                                     e.currentTarget.style.background = "linear-gradient(135deg, var(--primary), var(--primary-dark, #1a56db))";
-                                     e.currentTarget.style.color = "#fff";
-                                     e.currentTarget.style.boxShadow = "0 4px 16px rgba(59,130,246,0.25)";
-                                 }}
-                                 onMouseLeave={(e) => {
-                                     e.currentTarget.style.background = "rgba(255,255,255,0.6)";
-                                     e.currentTarget.style.color = "var(--text-muted)";
-                                     e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
-                                 }}
-                             >
-                                 🧾 Add Bills / Expenses
-                             </button>
+                            <button
+                                style={navBtnStyle}
+                                onClick={() => router.push("/supervisor/dashboard/add-bill")}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = "linear-gradient(135deg, var(--primary), var(--primary-dark, #1a56db))";
+                                    e.currentTarget.style.color = "#fff";
+                                    e.currentTarget.style.boxShadow = "0 4px 16px rgba(59,130,246,0.25)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = "rgba(255,255,255,0.6)";
+                                    e.currentTarget.style.color = "var(--text-muted)";
+                                    e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
+                                }}
+                            >
+                                🧾 Add Bills
+                            </button>
                         </div>
 
 
