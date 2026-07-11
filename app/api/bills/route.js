@@ -9,7 +9,7 @@ export async function POST(req) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { name, image_url, image_file_id, project_id } = await req.json();
+        const { name, image_url, image_file_id, project_id, amount } = await req.json();
 
         if (!name || !project_id) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -20,6 +20,7 @@ export async function POST(req) {
                 name,
                 image_url,
                 image_file_id,
+                amount: amount ? parseFloat(amount) : null,
                 project_id: parseInt(project_id),
                 creator_id: user.id
             }

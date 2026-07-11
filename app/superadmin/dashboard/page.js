@@ -1,40 +1,20 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import PaymentRequestList from "@/components/PaymentRequestList";
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
-import ProjectCreationModal from "@/components/ProjectCreationModal";
-import ProjectProgress from "@/components/ProjectProgress";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import ShimmerLoader from "@/components/ShimmerLoader";
-import ProjectEditModal from "@/components/ProjectEditModal";
+import DashboardCard from "@/components/DashboardCard";
 
 export default function SuperAdminDashboard() {
     const router = useRouter();
-    const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [projects, setProjects] = useState([]);
-    const [selectedProjectId, setSelectedProjectId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [projectToEdit, setProjectToEdit] = useState(null);
-
-    const fetchProjects = () => {
-        fetch("/api/projects")
-            .then(res => res.json())
-            .then(data => {
-                setProjects(data);
-                if (!selectedProjectId) setSelectedProjectId("all");
-            })
-            .catch(err => console.error(err));
-    };
 
     useEffect(() => {
         setIsLoading(true);
-        fetchProjects();
-        setTimeout(() => setIsLoading(false), 600);
+        setTimeout(() => setIsLoading(false), 500);
     }, []);
 
     const handleLogout = async () => {
@@ -42,18 +22,8 @@ export default function SuperAdminDashboard() {
         router.push("/login");
     };
 
-    const handleProjectCreated = (newProject) => {
-        fetchProjects();
-    };
-
-    const handleProjectUpdated = (updatedProject) => {
-        fetchProjects();
-    };
-
     return (
         <div style={{ minHeight: "100vh" }} className="responsive-root">
-
-
             <div className="bg-mesh-custom" />
             <div className="orb1" />
             <div className="orb2" />
@@ -69,15 +39,18 @@ export default function SuperAdminDashboard() {
                 <Link href="/superadmin/projects/progress" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
                     <span>📈</span> Project Progress
                 </Link>
-
+                <Link href="/superadmin/dashboard/projects" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
+                    <span>🏗️</span> Manage Projects
+                </Link>
+                <Link href="/superadmin/dashboard/approvals" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
+                    <span>✔️</span> Pending Approvals
+                </Link>
                 <Link href="/superadmin/history" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
                     <span>📜</span> Payment History
                 </Link>
-
                 <Link href="/superadmin/gallery" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
                     <span>🖼️</span> Stored Images
                 </Link>
-
                 <Link href="/superadmin/members" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
                     <span>👥</span> Manage Members
                 </Link>
@@ -97,45 +70,14 @@ export default function SuperAdminDashboard() {
                         height={36}
                         style={{ borderRadius: '8px' }}
                     />
-
                 </div>
 
                 <div className="nav-desktop">
-                    <button
-                        className="btn-primary"
-                        style={{
-                            padding: "8px 18px",
-                            fontSize: "13px",
-                            width: "auto",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            height: "36px"
-                        }}
-                        onClick={() => setIsProjectModalOpen(true)}
-                    >
-                        + New Project
-                    </button>
-                    <Link href="/superadmin/projects/progress" className="btn-ghost" style={{ textDecoration: "none", height: "36px", display: "inline-flex", alignItems: "center" }}>📈 Project Progress</Link>
-                    <Link href="/superadmin/gallery" className="btn-ghost" style={{ textDecoration: "none", height: "36px", display: "inline-flex", alignItems: "center" }}>🖼️ Gallery</Link>
-                    <Link href="/superadmin/history" className="btn-ghost" style={{ textDecoration: "none", height: "36px", display: "inline-flex", alignItems: "center" }}>📜 History</Link>
-                    <Link href="/superadmin/members" className="btn-ghost" style={{ textDecoration: "none", height: "36px", display: "inline-flex", alignItems: "center" }}>👥 Members</Link>
                     <span className="role-badge role-super" style={{ height: "36px", display: "inline-flex", alignItems: "center" }}>⚡ Super Admin</span>
                     <button className="btn-ghost" style={{ height: "36px", display: "inline-flex", alignItems: "center" }} onClick={handleLogout}>Sign Out</button>
                 </div>
 
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                    <button
-                        className="btn-primary mobile-only-btn"
-                        style={{
-                            padding: "6px 14px",
-                            fontSize: "12px",
-                            width: "auto",
-                            height: "36px"
-                        }}
-                        onClick={() => setIsProjectModalOpen(true)}
-                    >
-                        + Project
-                    </button>
                     <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)}>
                         <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="3" y="5" width="14" height="2" rx="1" fill="currentColor" />
@@ -150,113 +92,53 @@ export default function SuperAdminDashboard() {
                 {isLoading ? (
                     <ShimmerLoader />
                 ) : (
-                    <>
-
-
-                        <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
-                            <button className="btn-primary" style={{ width: "auto", padding: "10px 32px" }} onClick={() => router.push("/superadmin/projects/progress")}>
-                                View Progress Tracker and Notes
-                            </button>
-                            <button className="btn-ghost" style={{ width: "auto", padding: "10px 32px", border: "1px solid var(--border)" }} onClick={() => router.push("/superadmin/gallery")}>
-                                🖼️ View Stored Images
-                            </button>
-                        </div>
-
-                        <div className="fade-up" style={{ marginBottom: "36px" }}>
-                            <h2 className="section-title">Manage Projects</h2>
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
-                                {projects.slice(0, 6).map(project => (
-                                    <div key={project.id} className="glass-card" style={{ padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                        <div>
-                                            <div style={{ fontWeight: 700, fontSize: "15px", marginBottom: "4px" }}>{project.name}</div>
-                                            <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                                                {project.expense_heads?.length || 0} Heads • <span style={{ color: project.status === "ACTIVE" ? "var(--success)" : "var(--text-muted)" }}>{project.status}</span>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: "flex", gap: "8px" }}>
-                                            <button 
-                                                className="btn-ghost" 
-                                                onClick={() => {
-                                                    setProjectToEdit(project);
-                                                    setIsEditModalOpen(true);
-                                                }}
-                                                style={{ padding: "6px 14px", fontSize: "12px", borderRadius: "8px" }}
-                                            >
-                                                Edit
-                                            </button>
-                                            <button 
-                                                className={project.status === "ACTIVE" ? "btn-primary" : "btn-ghost"}
-                                                style={{ 
-                                                    height: "36px", 
-                                                    width: "auto", 
-                                                    padding: "0 12px", 
-                                                    fontSize: "12px",
-                                                    borderRadius: "8px",
-                                                    background: project.status === "ACTIVE" ? "var(--success)" : "rgba(59,130,246,0.1)", 
-                                                    borderColor: project.status === "ACTIVE" ? "var(--success)" : "rgba(59,130,246,0.2)",
-                                                    color: project.status === "ACTIVE" ? "#fff" : "var(--primary)"
-                                                }}
-                                                onClick={async () => {
-                                                    const isFinish = project.status === "ACTIVE";
-                                                    const action = isFinish ? "finish" : "unarchive";
-                                                    if (confirm(`Are you sure you want to ${isFinish ? "finish" : "unarchive"} this project? ${isFinish ? "All current notes will be archived." : ""}`)) {
-                                                        try {
-                                                            const res = await fetch(`/api/projects/${project.id}/${action}`, { method: "POST" });
-                                                            if (res.ok) {
-                                                                alert(`Project ${isFinish ? "finished" : "unarchived"} successfully!`);
-                                                                fetchProjects();
-                                                            } else {
-                                                                const data = await res.json();
-                                                                alert(data.error || `Failed to ${action} project`);
-                                                            }
-                                                        } catch (err) {
-                                                            alert("An error occurred");
-                                                        }
-                                                    }
-                                                }}
-                                            >
-                                                {project.status === "ACTIVE" ? "✓ Finish" : "↺ Unarchive"}
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            {projects.length > 6 && (
-                                <div style={{ textAlign: "center", marginTop: "24px" }}>
-                                    <button 
-                                        className="btn-ghost" 
-                                        onClick={() => router.push("/superadmin/projects/all")}
-                                        style={{ padding: "10px 32px", fontSize: "14px", fontWeight: 600, textDecoration: "underline" }}
-                                    >
-                                        Show All Projects ({projects.length})
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        <PaymentRequestList
-                            role="SUPER_ADMIN"
-                            limit={3}
+                    <div className="fade-up" style={{ 
+                        display: "grid", 
+                        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", 
+                        gap: "24px", 
+                        padding: "32px 0",
+                        maxWidth: "1000px",
+                        margin: "0 auto"
+                    }}>
+                        <DashboardCard 
+                            icon="✔️"
+                            title="Pending Approvals"
+                            description="Review and approve pending payment requests from managers."
+                            href="/superadmin/dashboard/approvals"
                         />
-
-                        <div className="divider" style={{ margin: "48px 0" }} />
-
-
-                    </>
+                        <DashboardCard 
+                            icon="🏗️"
+                            title="Manage Projects"
+                            description="Create new projects or edit existing ones."
+                            href="/superadmin/dashboard/projects"
+                        />
+                        <DashboardCard 
+                            icon="📈"
+                            title="Project Progress"
+                            description="Track and review project completion notes from managers."
+                            href="/superadmin/projects/progress"
+                        />
+                        <DashboardCard 
+                            icon="📜"
+                            title="Payment History"
+                            description="View a complete log of all past payments."
+                            href="/superadmin/history"
+                        />
+                        <DashboardCard 
+                            icon="🖼️"
+                            title="View Gallery"
+                            description="Browse stored images and photos related to expenses."
+                            href="/superadmin/gallery"
+                        />
+                        <DashboardCard 
+                            icon="👥"
+                            title="Manage Members"
+                            description="Add or remove team members and adjust their roles."
+                            href="/superadmin/members"
+                        />
+                    </div>
                 )}
             </main>
-
-            <ProjectCreationModal
-                isOpen={isProjectModalOpen}
-                onClose={() => setIsProjectModalOpen(false)}
-                onProjectCreated={handleProjectCreated}
-            />
-            <ProjectEditModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                project={projectToEdit}
-                onProjectUpdated={handleProjectUpdated}
-            />
         </div>
     );
 }

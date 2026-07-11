@@ -3,17 +3,23 @@
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import PaymentRequestForm from "@/components/PaymentRequestForm";
-import RecentBillsList from "@/components/RecentBillsList";
 import ShimmerLoader from "@/components/ShimmerLoader";
+import DashboardCard from "@/components/DashboardCard";
 
 export default function SupervisorDashboard() {
     const router = useRouter();
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [userName, setUserName] = useState("");
 
     useEffect(() => {
+        fetch("/api/verify")
+            .then(res => res.json())
+            .then(data => {
+                if (data.name) setUserName(data.name);
+            })
+            .catch(err => console.error(err));
+            
         const timer = setTimeout(() => {
             setIsLoading(false);
         }, 800);
@@ -25,27 +31,8 @@ export default function SupervisorDashboard() {
         router.push("/login");
     };
 
-    const handleSuccess = () => {
-        setRefreshTrigger(prev => prev + 1);
-        setIsLoading(true);
-        setTimeout(() => setIsLoading(false), 500);
-    };
-
     const navBtnStyle = {
-        padding: "14px 28px",
-        fontSize: "15px",
-        fontWeight: 600,
-        borderRadius: "12px",
-        border: "none",
-        cursor: "pointer",
-        transition: "all 0.25s ease",
-        background: "rgba(255,255,255,0.6)",
-        color: "var(--text-muted)",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-        backdropFilter: "blur(8px)",
-        flex: "1 1 0",
-        maxWidth: "280px",
-        textAlign: "center",
+        display: "none" // removed unused style
     };
 
     return (
@@ -59,7 +46,6 @@ export default function SupervisorDashboard() {
             <div className={`mobile-menu-overlay ${isMenuOpen ? "open" : ""}`}>
                 <button className="mobile-menu-close" onClick={() => setIsMenuOpen(false)}>✕</button>
                 <div style={{ marginBottom: "24px", textAlign: "center" }}>
-                    <div className="role-badge role-supervisor" style={{ marginBottom: "12px" }}>🛠️ Supervisor</div>
                     <div style={{ color: "var(--text-muted)", fontSize: "14px" }}>Field Operations</div>
                 </div>
 
@@ -80,7 +66,6 @@ export default function SupervisorDashboard() {
                     />
                 </div>
                 <div className="nav-desktop">
-                    <span className="role-badge role-supervisor">🛠️ Supervisor</span>
                     <button className="btn-ghost" onClick={handleLogout}>Sign Out</button>
                 </div>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -102,62 +87,41 @@ export default function SupervisorDashboard() {
 
 
 
-                        {/* Navigation Buttons */}
-                        <div className="fade-up" style={{ display: "flex", gap: "12px", marginTop: "32px", marginBottom: "32px", flexWrap: "wrap" }}>
-                            <button
-                                style={navBtnStyle}
-                                onClick={() => router.push("/supervisor/dashboard/requests")}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = "linear-gradient(135deg, var(--primary), var(--primary-dark, #1a56db))";
-                                    e.currentTarget.style.color = "#fff";
-                                    e.currentTarget.style.boxShadow = "0 4px 16px rgba(59,130,246,0.25)";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = "rgba(255,255,255,0.6)";
-                                    e.currentTarget.style.color = "var(--text-muted)";
-                                    e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
-                                }}
-                            >
-                                📋 Recent Requests
-                            </button>
-                            <button
-                                style={navBtnStyle}
-                                onClick={() => router.push("/supervisor/dashboard/progress")}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = "linear-gradient(135deg, var(--primary), var(--primary-dark, #1a56db))";
-                                    e.currentTarget.style.color = "#fff";
-                                    e.currentTarget.style.boxShadow = "0 4px 16px rgba(59,130,246,0.25)";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = "rgba(255,255,255,0.6)";
-                                    e.currentTarget.style.color = "var(--text-muted)";
-                                    e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
-                                }}
-                            >
-                                📊 Project Progress & Notes
-                            </button>
-                            <button
-                                style={navBtnStyle}
-                                onClick={() => router.push("/supervisor/dashboard/add-bill")}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = "linear-gradient(135deg, var(--primary), var(--primary-dark, #1a56db))";
-                                    e.currentTarget.style.color = "#fff";
-                                    e.currentTarget.style.boxShadow = "0 4px 16px rgba(59,130,246,0.25)";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = "rgba(255,255,255,0.6)";
-                                    e.currentTarget.style.color = "var(--text-muted)";
-                                    e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
-                                }}
-                            >
-                                🧾 Add Bills
-                            </button>
+                        {/* Welcome Banner */}
+                        <div className="fade-up" style={{ textAlign: "center", marginBottom: "32px", padding: "0 16px" }}>
+                            <h1 style={{ fontSize: "28px", fontWeight: "700", color: "var(--text)" }}>Welcome, {userName || "User"} 👋</h1>
+                            <p style={{ color: "var(--text-muted)", marginTop: "8px" }}>Here's an overview of your operations.</p>
                         </div>
 
+                        {/* Navigation Buttons */}
+                        <div className="fade-up" style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                            gap: "24px",
+                            padding: "0 0 32px 0",
+                            maxWidth: "1000px",
+                            margin: "0 auto"
+                        }}>
 
-                        <RecentBillsList refreshTrigger={refreshTrigger} />
-
-                        <PaymentRequestForm onSuccess={handleSuccess} />
+                            <DashboardCard
+                                icon="💸"
+                                title="Add Expense & Bill"
+                                description="Submit new expenses and upload bills for projects."
+                                href="/supervisor/dashboard/add-expense"
+                            />
+                            <DashboardCard
+                                icon="📊"
+                                title="Project Progress"
+                                description="Update completion status and notes for your projects."
+                                href="/supervisor/dashboard/progress"
+                            />
+                            <DashboardCard
+                                icon="📋"
+                                title="Recent Requests"
+                                description="View the status of your recent payment requests."
+                                href="/supervisor/dashboard/requests"
+                            />
+                        </div>
 
                     </>
                 )}

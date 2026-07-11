@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createPortal } from "react-dom";
 import Toast from "./Toast";
+import ExpenseDetailModal from "./ExpenseDetailModal";
 
 export default function PaymentRequestList({ refreshTrigger, role, limit = null, showFilter = false }) {
     const [requests, setRequests] = useState([]);
@@ -17,7 +17,7 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
     const [expandedNotes, setExpandedNotes] = useState({}); // { requestId: boolean }
     const [pmNotes, setPmNotes] = useState({}); // { requestId: string }
     const [savingNote, setSavingNote] = useState({}); // { requestId: boolean }
-    const [previewImage, setPreviewImage] = useState(null); // URL of image to show in modal
+    const [selectedRequest, setSelectedRequest] = useState(null); // Request to show in modal
 
 
     const fetchRequests = async () => {
@@ -339,30 +339,16 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                                     )}
                                 </div>
                                 <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                                    {req.isClubbed && req.subRequests && role === "PROJECT_MANAGER" ? (
+                                    <button 
+                                        className="btn-ghost"
+                                        style={{ width: "fit-content", padding: "8px 16px", fontSize: "12px", border: "1px solid var(--border)" }}
+                                        onClick={() => setSelectedRequest(req)}
+                                    >
+                                        📄 View Details
+                                    </button>
+
+                                    {req.isClubbed && req.subRequests && role === "PROJECT_MANAGER" && (
                                         <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
-                                            <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                                                {req.materials.map((m, i) => (
-                                                    <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", padding: "4px 10px", background: "rgba(15, 23, 42, 0.04)", borderRadius: "8px", color: "var(--text-muted)", border: "1px solid rgba(15, 23, 42, 0.05)" }}>
-                                                        <span>{m.name} (x{m.quantity})</span>
-                                                        {m.image_url && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-                                                                    console.log("Clicked preview for:", m.image_url);
-                                                                    setPreviewImage(m.image_url);
-                                                                }}
-                                                                style={{ border: "none", background: "rgba(59, 130, 246, 0.1)", color: "var(--primary)", padding: "2px 6px", borderRadius: "4px", cursor: "pointer", fontSize: "10px", fontWeight: "700" }}
-                                                            >
-                                                                📷 VIEW
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            
                                             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "8px", borderTop: "1px dashed var(--border)", paddingTop: "12px" }}>
                                                 {req.subRequests.map((sub) => (
                                                     <div key={sub.id} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "6px 12px", background: "rgba(15, 23, 42, 0.02)", borderRadius: "6px", border: "1px solid rgba(15, 23, 42, 0.05)" }}>
@@ -386,27 +372,6 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                                                     </div>
                                                 ))}
                                             </div>
-                                        </div>
-                                    ) : (
-                                        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
-                                            {req.materials.map((m, i) => (
-                                                <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", padding: "4px 10px", background: "rgba(15, 23, 42, 0.04)", borderRadius: "8px", color: "var(--text-muted)", border: "1px solid rgba(15, 23, 42, 0.05)" }}>
-                                                    <span>{m.name} (x{m.quantity})</span>
-                                                    {m.image_url && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                setPreviewImage(m.image_url);
-                                                            }}
-                                                            style={{ border: "none", background: "rgba(59, 130, 246, 0.1)", color: "var(--primary)", padding: "2px 6px", borderRadius: "4px", cursor: "pointer", fontSize: "10px", fontWeight: "700" }}
-                                                        >
-                                                            📷 VIEW
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
                                         </div>
                                     )}
                                 </div>
@@ -515,24 +480,12 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                     </button>
                 </div>
             )}
-            {/* Image Preview Modal via Portal to avoid stacking context issues */}
-            {previewImage && typeof window !== "undefined" && createPortal(
-                <div 
-                    style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.9)", backdropFilter: "blur(10px)", zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
-                    onClick={() => setPreviewImage(null)}
-                >
-                    <div style={{ position: "relative", maxWidth: "95%", maxHeight: "95%" }} onClick={(e) => e.stopPropagation()}>
-                        <img src={previewImage} alt="Material Preview" style={{ maxWidth: "100%", maxHeight: "90vh", borderRadius: "12px", objectFit: "contain" }} />
-                        <button 
-                            onClick={() => setPreviewImage(null)}
-                            style={{ position: "absolute", top: "-40px", right: "0", background: "none", border: "none", color: "#fff", fontSize: "24px", cursor: "pointer", zIndex: 100000 }}
-                        >
-                            ✕ Close
-                        </button>
-                    </div>
-                </div>,
-                document.body
-            )}
+            <ExpenseDetailModal
+                isOpen={!!selectedRequest}
+                onClose={() => setSelectedRequest(null)}
+                request={selectedRequest}
+                role={role}
+            />
         </div>
     );
 }

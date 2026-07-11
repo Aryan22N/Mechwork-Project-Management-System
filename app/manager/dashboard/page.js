@@ -4,36 +4,26 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import PaymentRequestList from "@/components/PaymentRequestList";
-import ProjectProgress from "@/components/ProjectProgress";
 import ShimmerLoader from "@/components/ShimmerLoader";
-import BillUploadForm from "@/components/BillUploadForm";
-import RecentBillsList from "@/components/RecentBillsList";
-import PaymentRequestForm from "@/components/PaymentRequestForm";
+import DashboardCard from "@/components/DashboardCard";
 
 export default function ManagerDashboard() {
     const router = useRouter();
-    const [projects, setProjects] = useState([]);
-    const [selectedProjectId, setSelectedProjectId] = useState(null);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [showBillForm, setShowBillForm] = useState(false);
-    const [showExpenseForm, setShowExpenseForm] = useState(false);
+    const [userName, setUserName] = useState("");
 
     useEffect(() => {
-        setIsLoading(true);
-        fetch("/api/projects?status=ACTIVE")
+        fetch("/api/verify")
             .then(res => res.json())
             .then(data => {
-                setProjects(data);
-                setSelectedProjectId("all");
+                if (data.name) setUserName(data.name);
             })
-            .catch(err => console.error(err))
-            .finally(() => {
-                // Keep shimmer for a tiny bit longer for smooth transition
-                setTimeout(() => setIsLoading(false), 600);
-            });
+            .catch(err => console.error(err));
+            
+        setIsLoading(true);
+        // Quick shimmer for transition
+        setTimeout(() => setIsLoading(false), 500);
     }, []);
 
     const handleLogout = async () => {
@@ -43,8 +33,6 @@ export default function ManagerDashboard() {
 
     return (
         <div style={{ minHeight: "100vh" }} className="responsive-root">
-
-
             <div className="bg-mesh-custom" />
             <div className="orb1" />
             <div className="orb2" />
@@ -53,15 +41,15 @@ export default function ManagerDashboard() {
             <div className={`mobile-menu-overlay ${isMenuOpen ? "open" : ""}`}>
                 <button className="mobile-menu-close" onClick={() => setIsMenuOpen(false)}>✕</button>
                 <div style={{ marginBottom: "24px", textAlign: "center" }}>
-                    <div className="role-badge role-manager" style={{ marginBottom: "12px" }}>📋 Project Manager</div>
-                    <div style={{ color: "var(--text-muted)", fontSize: "14px" }}>Review & Approve</div>
+                    <div style={{ color: "var(--text-muted)", fontSize: "14px" }}>Dashboard Menu</div>
                 </div>
 
                 <Link href="/manager/projects/progress" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
                     <span>📈</span> Project Progress
                 </Link>
-
-
+                <Link href="/manager/dashboard/approvals" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
+                    <span>✔️</span> Pending Approvals
+                </Link>
 
                 <button className="mobile-menu-link" style={{ width: "100%", background: "rgba(248, 113, 113, 0.05)", borderColor: "rgba(248, 113, 113, 0.2)", color: "var(--danger)" }} onClick={handleLogout}>
                     <span>🚪</span> Sign Out
@@ -80,8 +68,6 @@ export default function ManagerDashboard() {
                     />
                 </div>
                 <div className="nav-desktop">
-                    <Link href="/manager/projects/progress" className="btn-ghost" style={{ textDecoration: "none", height: "36px", display: "inline-flex", alignItems: "center" }}>📈 Project Progress</Link>
-                    <span className="role-badge role-manager">📋 Project Manager</span>
                     <button className="btn-ghost" onClick={handleLogout}>Sign Out</button>
                 </div>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -100,46 +86,38 @@ export default function ManagerDashboard() {
                     <ShimmerLoader />
                 ) : (
                     <>
-
-
-                        <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
-                            <button
-                                className="btn-primary fade-up"
-                                style={{ width: "auto", padding: "10px 32px" }}
-                                onClick={() => router.push("/manager/projects/progress")}
-                            >
-                                📈 Open Progress Tracker and Note
-                            </button>
-                            <button
-                                className="btn-ghost fade-up"
-                                style={{ width: "auto", padding: "10px 32px", border: "1px solid var(--border)", background: showBillForm ? "rgba(0,0,0,0.05)" : "white" }}
-                                onClick={() => setShowBillForm(!showBillForm)}
-                            >
-                                🧾 {showBillForm ? "Close Bill Form" : "Add Bills"}
-                            </button>
-                            <button className="btn-ghost fade-up"
-                                style={{ width: "auto", padding: "10px 32px", border: "1px solid var(--border)", background: showBillForm ? "rgba(0,0,0,0.05)" : "white" }}
-                                onClick={() => { setIsMenuOpen(false); setShowExpenseForm(true); }}>
-                                <span></span> Add Expense
-                            </button>
+                        {/* Welcome Banner */}
+                        <div className="fade-up" style={{ textAlign: "center", marginBottom: "32px", padding: "0 16px" }}>
+                            <h1 style={{ fontSize: "28px", fontWeight: "700", color: "var(--text)" }}>Welcome, {userName || "User"} 👋</h1>
+                            <p style={{ color: "var(--text-muted)", marginTop: "8px" }}>Here's an overview of your dashboard.</p>
                         </div>
-
-                        {showBillForm && (
-                            <BillUploadForm onSuccess={() => {
-                                setShowBillForm(false);
-                                setRefreshTrigger(prev => prev + 1);
-                            }} />
-                        )}
-
-                        {showExpenseForm && (
-                            <PaymentRequestForm onSuccess={() => {
-                                setShowExpenseForm(false);
-                                setRefreshTrigger(prev => prev + 1);
-                            }} />
-                        )}
-
-                        <PaymentRequestList role="PROJECT_MANAGER" />
-
+                        <div className="fade-up" style={{ 
+                            display: "grid", 
+                            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", 
+                            gap: "24px", 
+                            padding: "0 0 32px 0",
+                            maxWidth: "1000px",
+                            margin: "0 auto"
+                        }}>
+                        <DashboardCard 
+                            icon="✔️"
+                            title="Pending Approvals"
+                            description="Review and approve pending payment requests from supervisors."
+                            href="/manager/dashboard/approvals"
+                        />
+                        <DashboardCard 
+                            icon="📈"
+                            title="Project Progress"
+                            description="Track and update the completion percentage of your active projects."
+                            href="/manager/projects/progress"
+                        />
+                        <DashboardCard 
+                            icon="💸"
+                            title="Add Expense & Bill"
+                            description="Submit new expense requests and upload project bills."
+                            href="/manager/dashboard/add-expense"
+                        />
+                        </div>
                     </>
                 )}
             </main>

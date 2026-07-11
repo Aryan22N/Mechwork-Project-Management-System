@@ -216,7 +216,7 @@ export default function LoginPage() {
                 >
                     {/* Header */}
                     <motion.div style={styles.formHeader} variants={fadeUp}>
-                        <p style={styles.formEyebrow}>WELCOME BACK</p>
+                        <p style={styles.formEyebrow}>WELCOME</p>
                         <h1 style={styles.formTitle} className="responsive-form-title">Sign in to your account</h1>
                         <p style={styles.formSub}>
                             Use your registered phone number and date of birth.

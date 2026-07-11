@@ -114,6 +114,7 @@ model Bill {
   name            String   @db.VarChar(100)
   image_url       String?  @db.Text
   image_file_id   String?  @db.Text
+  amount          Decimal? @db.Decimal(10, 2)
   project         Project  @relation(fields: [project_id], references: [id])
   project_id      Int
   creator         User     @relation(fields: [creator_id], references: [id])
