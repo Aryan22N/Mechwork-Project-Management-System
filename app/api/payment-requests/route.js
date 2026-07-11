@@ -229,7 +229,8 @@ export async function POST(req) {
                 unit_price: parseFloat(m.unit_price),
                 image_url: m.image_url || null,
                 image_file_id: m.image_file_id || null,
-                request_id: existingRequest.id
+                request_id: existingRequest.id,
+                worker_id: m.worker_id ? parseInt(m.worker_id) : null
             }));
 
             await prisma.material.createMany({
@@ -261,7 +262,8 @@ export async function POST(req) {
                         quantity: parseInt(m.quantity),
                         unit_price: parseFloat(m.unit_price),
                         image_url: m.image_url || null,
-                        image_file_id: m.image_file_id || null
+                        image_file_id: m.image_file_id || null,
+                        worker_id: m.worker_id ? parseInt(m.worker_id) : null
                     }))
                 }
             },

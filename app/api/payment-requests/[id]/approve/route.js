@@ -14,7 +14,7 @@ export async function PATCH(req, { params }) {
         const requestIds = id.split(",").map(i => parseInt(i)).filter(i => !isNaN(i));
         
         const body = await req.json().catch(() => ({}));
-        const { deleteFileIds } = body;
+        const { deleteFileIds, overrideBudget } = body;
 
         if (requestIds.length === 0) {
             return NextResponse.json({ error: "Invalid IDs" }, { status: 400 });
@@ -34,6 +34,36 @@ export async function PATCH(req, { params }) {
             if (requests.some(r => r.status !== "PENDING_PM")) {
                 return NextResponse.json({ error: "One or more requests have invalid status for Manager approval" }, { status: 400 });
             }
+            
+            // Budget Validation Logic
+            const projectId = requests[0].project_id;
+            const project = await prisma.project.findUnique({ where: { id: projectId } });
+            
+            if (project?.budget) {
+                const currentApprovedRequests = await prisma.paymentRequest.aggregate({
+                    where: { 
+                        project_id: projectId,
+                        status: { in: ["PENDING_ADMIN", "PAID"] }
+                    },
+                    _sum: { total_amount: true }
+                });
+                
+                const currentApprovedSum = currentApprovedRequests._sum.total_amount ? parseFloat(currentApprovedRequests._sum.total_amount) : 0;
+                const approvingSum = requests.reduce((sum, req) => sum + parseFloat(req.total_amount), 0);
+                
+                if (currentApprovedSum + approvingSum > parseFloat(project.budget) && !overrideBudget) {
+                    return NextResponse.json({
+                        error: "BUDGET_EXCEEDED",
+                        message: "Approving these requests will exceed the project's allocated budget.",
+                        allocatedBudget: parseFloat(project.budget),
+                        currentExpenses: currentApprovedSum,
+                        approvingAmount: approvingSum,
+                        remainingBudget: parseFloat(project.budget) - currentApprovedSum,
+                        amountExceeded: (currentApprovedSum + approvingSum) - parseFloat(project.budget)
+                    }, { status: 409 });
+                }
+            }
+
             nextStatus = "PENDING_ADMIN";
         } else if (hasRole(user, "SUPER_ADMIN")) {
             if (requests.some(r => r.status !== "PENDING_ADMIN")) {

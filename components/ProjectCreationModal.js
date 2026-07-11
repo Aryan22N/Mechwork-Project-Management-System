@@ -7,6 +7,7 @@ const DEFAULT_EXPENSE_HEADS = ["Fuel", "Food", "Material", "Labour", "Misc"];
 export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated }) {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
+    const [budget, setBudget] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [selectedHeads, setSelectedHeads] = useState([...DEFAULT_EXPENSE_HEADS]);
@@ -45,7 +46,7 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ name, description, expense_heads: selectedHeads }),
+                body: JSON.stringify({ name, description, expense_heads: selectedHeads, budget: budget ? parseFloat(budget) : null }),
             });
 
             if (!response.ok) {
@@ -56,6 +57,7 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
             const newProject = await response.json();
             setName("");
             setDescription("");
+            setBudget("");
             setSelectedHeads([...DEFAULT_EXPENSE_HEADS]);
             setCustomHead("");
             onProjectCreated(newProject);
@@ -105,6 +107,18 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
                             style={{ minHeight: "80px", resize: "vertical" }}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: "16px" }}>
+                        <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 500, color: "var(--text-muted)" }}>Allocated Budget (₹)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            className="input-field"
+                            placeholder="e.g. 50000"
+                            value={budget}
+                            onChange={(e) => setBudget(e.target.value)}
                         />
                     </div>
 

@@ -12,14 +12,34 @@ export default function ManagerDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [userName, setUserName] = useState("");
+    const [budgetWarnings, setBudgetWarnings] = useState([]);
 
     useEffect(() => {
-        fetch("/api/verify")
-            .then(res => res.json())
-            .then(data => {
+        const fetchUserData = async () => {
+            try {
+                const res = await fetch("/api/verify");
+                const data = await res.json();
                 if (data.name) setUserName(data.name);
-            })
-            .catch(err => console.error(err));
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        const fetchAnalytics = async () => {
+            try {
+                const res = await fetch("/api/analytics/projects");
+                const data = await res.json();
+                if (data && data.chartData) {
+                    const warnings = data.chartData.filter(p => p.budget > 0 && (p.spent / p.budget) >= 0.9);
+                    setBudgetWarnings(warnings);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        fetchUserData();
+        fetchAnalytics();
             
         setIsLoading(true);
         // Quick shimmer for transition
@@ -49,6 +69,9 @@ export default function ManagerDashboard() {
                 </Link>
                 <Link href="/manager/dashboard/approvals" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
                     <span>✔️</span> Pending Approvals
+                </Link>
+                <Link href="/manager/workers" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
+                    <span>👷</span> Worker Management
                 </Link>
 
                 <button className="mobile-menu-link" style={{ width: "100%", background: "rgba(248, 113, 113, 0.05)", borderColor: "rgba(248, 113, 113, 0.2)", color: "var(--danger)" }} onClick={handleLogout}>
@@ -91,6 +114,25 @@ export default function ManagerDashboard() {
                             <h1 style={{ fontSize: "28px", fontWeight: "700", color: "var(--text)" }}>Welcome, {userName || "User"} 👋</h1>
                             <p style={{ color: "var(--text-muted)", marginTop: "8px" }}>Here's an overview of your dashboard.</p>
                         </div>
+
+                        {/* Budget Warnings */}
+                        {budgetWarnings.length > 0 && (
+                            <div className="fade-up" style={{ maxWidth: "1000px", margin: "0 auto 24px auto", padding: "0 16px" }}>
+                                {budgetWarnings.map((warning, i) => (
+                                    <div key={i} style={{ padding: "16px", marginBottom: "12px", borderRadius: "12px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", display: "flex", alignItems: "flex-start", gap: "12px" }}>
+                                        <span style={{ fontSize: "20px" }}>⚠️</span>
+                                        <div>
+                                            <h4 style={{ margin: "0 0 4px 0", color: "#b91c1c", fontWeight: "600", fontSize: "15px" }}>Budget Alert: {warning.name}</h4>
+                                            <p style={{ margin: 0, color: "#991b1b", fontSize: "14px" }}>
+                                                This project has utilized ₹{warning.spent.toLocaleString()} out of its ₹{warning.budget.toLocaleString()} budget 
+                                                ({((warning.spent / warning.budget) * 100).toFixed(1)}%). Please monitor pending approvals carefully.
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         <div className="fade-up" style={{ 
                             display: "grid", 
                             gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", 
@@ -116,6 +158,12 @@ export default function ManagerDashboard() {
                             title="Add Expense & Bill"
                             description="Submit new expense requests and upload project bills."
                             href="/manager/dashboard/add-expense"
+                        />
+                        <DashboardCard 
+                            icon="👷"
+                            title="Worker Management"
+                            description="Manage your workforce, tracking expenses per worker."
+                            href="/manager/workers"
                         />
                         </div>
                     </>

@@ -10,6 +10,10 @@ import {
     ImageKitUploadNetworkError,
     upload,
 } from "@imagekit/next";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { CheckIcon, ChevronsUpDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function UnifiedExpenseBillForm({ onSuccess }) {
     // --- Shared State ---
@@ -20,9 +24,13 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
     const [showSuccess, setShowSuccess] = useState(false);
 
     // --- Expense / Material State ---
-    const [materials, setMaterials] = useState([{ name: "", quantity: "", unit_price: "", image_url: "", image_file_id: "" }]);
+    const [materials, setMaterials] = useState([{ name: "", quantity: "", unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
     const [expenseHeads, setExpenseHeads] = useState([]);
     const [uploadingMaterial, setUploadingMaterial] = useState(null); // index of material being uploaded
+    const [suggestions, setSuggestions] = useState({}); // { worker_id: ["Expense 1", "Expense 2"] }
+    const [workerSearchOpen, setWorkerSearchOpen] = useState({}); // { index: boolean }
+    const [workerSearchQuery, setWorkerSearchQuery] = useState("");
+    const [workerSearchResults, setWorkerSearchResults] = useState([]);
     const [showCamera, setShowCamera] = useState(false);
     const [activeMaterialIndex, setActiveMaterialIndex] = useState(null);
     const [prevProjectId, setPrevProjectId] = useState("");
@@ -81,9 +89,40 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
         }
     };
 
+    // --- Worker Autocomplete ---
+    useEffect(() => {
+        const fetchWorkers = async () => {
+            if (workerSearchQuery.length >= 2) {
+                try {
+                    const res = await fetch(`/api/workers/search?q=${encodeURIComponent(workerSearchQuery)}`);
+                    const data = await res.json();
+                    setWorkerSearchResults(Array.isArray(data) ? data : []);
+                } catch (err) {
+                    console.error("Worker search error:", err);
+                }
+            } else {
+                setWorkerSearchResults([]);
+            }
+        };
+
+        const timeoutId = setTimeout(fetchWorkers, 300);
+        return () => clearTimeout(timeoutId);
+    }, [workerSearchQuery]);
+
+    const fetchSuggestions = async (workerId) => {
+        if (!workerId || suggestions[workerId]) return;
+        try {
+            const res = await fetch(`/api/materials/suggestions?worker_id=${workerId}`);
+            const data = await res.json();
+            setSuggestions(prev => ({ ...prev, [workerId]: Array.isArray(data) ? data : [] }));
+        } catch (err) {
+            console.error("Suggestions error:", err);
+        }
+    };
+
     // --- Material / Expense Handlers ---
     const addMaterial = () => {
-        setMaterials([...materials, { name: "", quantity: 1, unit_price: 0, image_url: "", image_file_id: "" }]);
+        setMaterials([...materials, { name: "", quantity: 1, unit_price: 0, image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
     };
 
     const removeMaterial = (index) => {
@@ -203,10 +242,11 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                         project_id: selectedProject,
                         materials: validMaterials.map(m => ({
                             name: m.name,
-                            quantity: m.quantity,
-                            unit_price: m.unit_price,
+                            quantity: Number(m.quantity),
+                            unit_price: Number(m.unit_price),
                             image_url: m.image_url,
-                            image_file_id: m.image_file_id
+                            image_file_id: m.image_file_id,
+                            worker_id: m.worker_id
                         })),
                         total_amount: validMaterials.reduce((sum, m) => sum + (m.quantity * m.unit_price), 0)
                     })
@@ -217,6 +257,24 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                     }
                 });
                 promises.push(expensePromise);
+
+                // Handle reminders for materials that have it enabled
+                validMaterials.forEach(m => {
+                    if (m.worker_id && m.is_recurring && m.reminder_day) {
+                        const reminderPromise = fetch("/api/reminders", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                worker_id: m.worker_id,
+                                project_id: selectedProject,
+                                amount: Number(m.unit_price) * Number(m.quantity),
+                                day_of_month: m.reminder_day,
+                                reason: m.name
+                            })
+                        });
+                        promises.push(reminderPromise);
+                    }
+                });
             }
 
             // 2. Submit Bill if valid
@@ -245,7 +303,7 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
 
             // Success handling
             setShowSuccess(true);
-            setMaterials([{ name: "", quantity: 1, unit_price: 0, image_url: "", image_file_id: "" }]);
+            setMaterials([{ name: "", quantity: 1, unit_price: 0, image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
             setBillName("");
             setBillAmount("");
             setBillPreviewUrl(null);
@@ -307,6 +365,65 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                 <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px", color: "var(--text)" }}>Add Expenses & Materials</h3>
                 {materials.map((m, index) => (
                     <div key={index} style={{ marginBottom: "16px", padding: "16px", background: "rgba(0,0,0,0.02)", borderRadius: "12px", border: "1px solid rgba(0,0,0,0.05)" }}>
+                        
+                        {/* Worker Assignment */}
+                        <div style={{ marginBottom: "12px" }}>
+                            <Popover open={workerSearchOpen[index]} onOpenChange={(open) => setWorkerSearchOpen(prev => ({ ...prev, [index]: open }))}>
+                                <PopoverTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="input-field"
+                                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "#fff", cursor: "pointer", height: "42px" }}
+                                    >
+                                        {m.worker_name ? m.worker_name : <span style={{ color: "var(--text-muted)" }}>Assign Worker (Optional)...</span>}
+                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-0">
+                                    <Command>
+                                        <CommandInput placeholder="Search worker by name..." onValueChange={setWorkerSearchQuery} />
+                                        <CommandList>
+                                            <CommandEmpty>No worker found.</CommandEmpty>
+                                            <CommandGroup>
+                                                {workerSearchResults.map((worker) => (
+                                                    <CommandItem
+                                                        key={worker.id}
+                                                        value={worker.name}
+                                                        onSelect={() => {
+                                                            updateMaterial(index, "worker_id", worker.id);
+                                                            updateMaterial(index, "worker_name", worker.name);
+                                                            setWorkerSearchOpen(prev => ({ ...prev, [index]: false }));
+                                                            fetchSuggestions(worker.id);
+                                                        }}
+                                                    >
+                                                        <CheckIcon className={`mr-2 h-4 w-4 ${m.worker_id === worker.id ? "opacity-100" : "opacity-0"}`} />
+                                                        {worker.name} {worker.designation && <span className="text-muted-foreground ml-2">({worker.designation})</span>}
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        {/* Suggestions Carousel */}
+                        {m.worker_id && suggestions[m.worker_id] && suggestions[m.worker_id].length > 0 && (
+                            <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "12px", scrollbarWidth: "none" }} className="no-scrollbar">
+                                <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", alignItems: "center" }}>Suggestions:</span>
+                                {suggestions[m.worker_id].map((suggestion, i) => (
+                                    <Badge 
+                                        key={i} 
+                                        variant="secondary" 
+                                        className="cursor-pointer whitespace-nowrap hover:bg-gray-200"
+                                        onClick={() => updateMaterial(index, "name", suggestion)}
+                                    >
+                                        {suggestion}
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
+
                         <div style={{ display: "flex", gap: "12px", marginBottom: "12px", alignItems: "center", flexWrap: "wrap" }}>
                             {expenseHeads.length > 0 ? (
                                 <select
@@ -403,6 +520,37 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                             {uploadingMaterial === index && <span className="spinner" style={{ width: "14px", height: "14px", borderTopColor: "var(--primary)" }}></span>}
                             {!m.image_url && <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>* Photo of material/receipt is recommended</span>}
                         </div>
+
+                        {/* Recurring Reminder Section */}
+                        {m.worker_id && (
+                            <div style={{ marginTop: "16px", padding: "12px", background: "rgba(59, 130, 246, 0.05)", borderRadius: "8px", border: "1px solid rgba(59, 130, 246, 0.1)" }}>
+                                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "var(--text)" }}>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={m.is_recurring} 
+                                        onChange={(e) => updateMaterial(index, "is_recurring", e.target.checked)}
+                                        style={{ accentColor: "var(--primary)", width: "16px", height: "16px" }}
+                                    />
+                                    Make this a monthly recurring allowance
+                                </label>
+                                {m.is_recurring && (
+                                    <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
+                                        <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>Generate request on day:</span>
+                                        <input 
+                                            type="number" 
+                                            min="1" 
+                                            max="31" 
+                                            className="input-field" 
+                                            style={{ width: "60px", padding: "4px 8px" }}
+                                            placeholder="DD"
+                                            value={m.reminder_day}
+                                            onChange={(e) => updateMaterial(index, "reminder_day", e.target.value)}
+                                        />
+                                        <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>of every month.</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 ))}
 

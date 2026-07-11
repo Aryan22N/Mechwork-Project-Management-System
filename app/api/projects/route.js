@@ -33,7 +33,7 @@ export async function POST(req) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { name, description, expense_heads } = await req.json();
+        const { name, description, expense_heads, budget } = await req.json();
 
         if (!name) {
             return NextResponse.json({ error: "Project name is required" }, { status: 400 });
@@ -44,6 +44,7 @@ export async function POST(req) {
                 name,
                 description: description || "",
                 expense_heads: Array.isArray(expense_heads) ? expense_heads : [],
+                budget: budget ? parseFloat(budget) : null,
             },
         });
 

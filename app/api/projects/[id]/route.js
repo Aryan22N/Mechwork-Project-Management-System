@@ -11,7 +11,7 @@ export async function PATCH(req, { params }) {
 
         const { id } = await params;
         const body = await req.json();
-        const { name, description, expense_heads, status } = body;
+        const { name, description, expense_heads, status, budget } = body;
 
         const updatedProject = await prisma.project.update({
             where: { id: parseInt(id) },
@@ -20,6 +20,7 @@ export async function PATCH(req, { params }) {
                 ...(description !== undefined && { description }),
                 ...(expense_heads && { expense_heads: Array.isArray(expense_heads) ? expense_heads : [] }),
                 ...(status && { status }),
+                ...(budget !== undefined && { budget: budget ? parseFloat(budget) : null }),
             },
         });
 
