@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -11,6 +11,24 @@ export default function LoginPage() {
     const [dob, setDob] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [checkingAuth, setCheckingAuth] = useState(true);
+
+    useEffect(() => {
+        fetch("/api/verify")
+            .then(res => res.json())
+            .then(data => {
+                if (data.authenticated) {
+                    if (data.role === "SUPER_ADMIN") router.replace("/superadmin/dashboard");
+                    else if (data.role === "PROJECT_MANAGER") router.replace("/manager/dashboard");
+                    else if (data.role === "SUPERVISOR") router.replace("/supervisor/dashboard");
+                } else {
+                    setCheckingAuth(false);
+                }
+            })
+            .catch(() => {
+                setCheckingAuth(false);
+            });
+    }, [router]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -80,6 +98,11 @@ export default function LoginPage() {
 
     return (
         <div style={styles.root} className="responsive-root">
+            {checkingAuth && (
+                <div style={styles.checkingOverlay}>
+                    <div style={styles.spinner}></div>
+                </div>
+            )}
             <style>{`
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes pulse-orb {
@@ -306,6 +329,15 @@ const styles = {
         minHeight: "100vh",
         fontFamily: "var(--font-inter, 'Inter', sans-serif)",
         overflow: "hidden",
+    },
+    checkingOverlay: {
+        position: "absolute",
+        inset: 0,
+        backgroundColor: "#f8fafc",
+        zIndex: 50,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
     },
     left: {
         display: "flex",
