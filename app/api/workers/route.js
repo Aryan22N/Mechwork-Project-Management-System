@@ -49,7 +49,7 @@ export async function POST(req) {
                 phone,
                 address,
                 designation,
-                joining_date: joining_date ? new Date(joining_date) : null,
+                joining_date: joining_date ? new Date(joining_date) : new Date(),
                 status: status || "ACTIVE",
                 notes
             }

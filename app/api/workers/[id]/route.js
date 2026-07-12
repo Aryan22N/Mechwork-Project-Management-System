@@ -45,6 +45,11 @@ export async function GET(req, { params }) {
             where: { id: parseInt(id) },
             include: {
                 materials: {
+                    where: {
+                        request: {
+                            status: { in: ["PENDING_ADMIN", "PAID"] }
+                        }
+                    },
                     include: { request: { include: { project: true } } },
                     orderBy: { request: { created_at: 'desc' } }
                 },

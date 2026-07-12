@@ -12,8 +12,10 @@ export default function WorkerDashboard({ role }) {
     const [search, setSearch] = useState("");
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [newWorker, setNewWorker] = useState({ name: "", phone: "", designation: "", status: "ACTIVE" });
+    const todayISO = () => new Date().toISOString().split("T")[0];
+    const [newWorker, setNewWorker] = useState({ name: "", phone: "", designation: "", status: "ACTIVE", joining_date: todayISO() });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState("");
     const [selectedWorker, setSelectedWorker] = useState(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -55,7 +57,7 @@ export default function WorkerDashboard({ role }) {
             });
             if (res.ok) {
                 setIsAddOpen(false);
-                setNewWorker({ name: "", phone: "", designation: "", status: "ACTIVE" });
+                setNewWorker({ name: "", phone: "", designation: "", status: "ACTIVE", joining_date: todayISO() });
                 fetchWorkers();
             } else {
                 const data = await res.json();
@@ -65,6 +67,25 @@ export default function WorkerDashboard({ role }) {
             setError("Server error");
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteWorker = async (workerId) => {
+        if (!confirm("Are you sure you want to delete this worker? This action cannot be undone.")) return;
+        setIsDeleting(true);
+        try {
+            const res = await fetch(`/api/workers/${workerId}`, { method: "DELETE" });
+            if (res.ok) {
+                setSelectedWorker(null);
+                fetchWorkers();
+            } else {
+                const data = await res.json();
+                alert(data.error || "Failed to delete worker");
+            }
+        } catch (err) {
+            alert("Server error while deleting worker");
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -318,7 +339,7 @@ export default function WorkerDashboard({ role }) {
                                 />
                             </div>
 
-                            <div style={{ marginBottom: "24px" }}>
+                            <div style={{ marginBottom: "16px" }}>
                                 <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-muted)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                                     Phone (Optional)
                                 </label>
@@ -339,6 +360,21 @@ export default function WorkerDashboard({ role }) {
                                         {10 - newWorker.phone.length} more digit{10 - newWorker.phone.length !== 1 ? "s" : ""} needed
                                     </p>
                                 )}
+                            </div>
+
+                            <div style={{ marginBottom: "24px" }}>
+                                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-muted)", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                    Joining Date
+                                </label>
+                                <input
+                                    type="date"
+                                    className="input-field"
+                                    value={newWorker.joining_date}
+                                    onChange={e => setNewWorker({ ...newWorker, joining_date: e.target.value })}
+                                />
+                                <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
+                                    Defaults to today's date
+                                </p>
                             </div>
 
                             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
@@ -538,9 +574,20 @@ export default function WorkerDashboard({ role }) {
                                     </p>
                                 )}
 
-                                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "24px" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "24px", flexWrap: "wrap", gap: "12px" }}>
+                                    {role === "SUPER_ADMIN" && (
+                                        <button
+                                            className="btn-ghost"
+                                            style={{ color: "var(--danger)", borderColor: "rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.05)" }}
+                                            onClick={() => handleDeleteWorker(selectedWorker.id)}
+                                            disabled={isDeleting}
+                                        >
+                                            {isDeleting ? "Deleting..." : "🗑️ Delete Worker"}
+                                        </button>
+                                    )}
                                     <button
                                         className="btn-ghost"
+                                        style={{ marginLeft: "auto" }}
                                         onClick={() => setSelectedWorker(null)}
                                     >
                                         Close

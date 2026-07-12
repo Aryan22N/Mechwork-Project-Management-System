@@ -29,8 +29,6 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
     const [uploadingMaterial, setUploadingMaterial] = useState(null); // index of material being uploaded
     const [suggestions, setSuggestions] = useState({}); // { worker_id: ["Expense 1", "Expense 2"] }
     const [workerSearchOpen, setWorkerSearchOpen] = useState({}); // { index: boolean }
-    const [workerSearchQuery, setWorkerSearchQuery] = useState("");
-    const [workerSearchResults, setWorkerSearchResults] = useState([]);
     const [showCamera, setShowCamera] = useState(false);
     const [activeMaterialIndex, setActiveMaterialIndex] = useState(null);
     const [prevProjectId, setPrevProjectId] = useState("");
@@ -65,7 +63,7 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
 
             // Only reset materials if the project ID actually changed from its previous value
             if (selectedProject !== prevProjectId) {
-                setMaterials([{ name: "", quantity: "", unit_price: "", image_url: "", image_file_id: "" }]);
+                setMaterials([{ name: "", quantity: "", unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
                 setPrevProjectId(selectedProject);
             }
         } else {
@@ -90,24 +88,31 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
     };
 
     // --- Worker Autocomplete ---
-    useEffect(() => {
-        const fetchWorkers = async () => {
-            if (workerSearchQuery.length >= 2) {
+    // Store per-row: { [index]: { query, results, loading } }
+    const [workerSearch, setWorkerSearch] = useState({});
+
+    const getWorkerSearch = (index) => workerSearch[index] || { query: "", results: [], loading: false };
+
+    const handleWorkerQueryChange = (index, query) => {
+        setWorkerSearch(prev => ({ ...prev, [index]: { ...getWorkerSearch(index), query, results: prev[index]?.results || [] } }));
+
+        if (query.length >= 2) {
+            const timeoutKey = `_t${index}`;
+            clearTimeout(handleWorkerQueryChange[timeoutKey]);
+            handleWorkerQueryChange[timeoutKey] = setTimeout(async () => {
                 try {
-                    const res = await fetch(`/api/workers/search?q=${encodeURIComponent(workerSearchQuery)}`);
+                    const res = await fetch(`/api/workers/search?q=${encodeURIComponent(query)}`);
                     const data = await res.json();
-                    setWorkerSearchResults(Array.isArray(data) ? data : []);
+                    setWorkerSearch(prev => ({ ...prev, [index]: { ...prev[index], results: Array.isArray(data) ? data : [] } }));
                 } catch (err) {
                     console.error("Worker search error:", err);
                 }
-            } else {
-                setWorkerSearchResults([]);
-            }
-        };
+            }, 300);
+        } else {
+            setWorkerSearch(prev => ({ ...prev, [index]: { ...prev[index], results: [] } }));
+        }
+    };
 
-        const timeoutId = setTimeout(fetchWorkers, 300);
-        return () => clearTimeout(timeoutId);
-    }, [workerSearchQuery]);
 
     const fetchSuggestions = async (workerId) => {
         if (!workerId || suggestions[workerId]) return;
@@ -380,27 +385,36 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                                     </button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-[300px] p-0">
-                                    <Command>
-                                        <CommandInput placeholder="Search worker by name..." onValueChange={setWorkerSearchQuery} />
+                                    <Command shouldFilter={false}>
+                                        <CommandInput
+                                            placeholder="Search worker by name..."
+                                            value={getWorkerSearch(index).query}
+                                            onValueChange={(q) => handleWorkerQueryChange(index, q)}
+                                        />
                                         <CommandList>
-                                            <CommandEmpty>No worker found.</CommandEmpty>
-                                            <CommandGroup>
-                                                {workerSearchResults.map((worker) => (
-                                                    <CommandItem
-                                                        key={worker.id}
-                                                        value={worker.name}
-                                                        onSelect={() => {
-                                                            updateMaterial(index, "worker_id", worker.id);
-                                                            updateMaterial(index, "worker_name", worker.name);
-                                                            setWorkerSearchOpen(prev => ({ ...prev, [index]: false }));
-                                                            fetchSuggestions(worker.id);
-                                                        }}
-                                                    >
-                                                        <CheckIcon className={`mr-2 h-4 w-4 ${m.worker_id === worker.id ? "opacity-100" : "opacity-0"}`} />
-                                                        {worker.name} {worker.designation && <span className="text-muted-foreground ml-2">({worker.designation})</span>}
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
+                                            {getWorkerSearch(index).query.length < 2 ? (
+                                                <CommandEmpty>Type at least 2 characters to search...</CommandEmpty>
+                                            ) : getWorkerSearch(index).results.length === 0 ? (
+                                                <CommandEmpty>No worker found.</CommandEmpty>
+                                            ) : (
+                                                <CommandGroup>
+                                                    {getWorkerSearch(index).results.map((worker) => (
+                                                        <CommandItem
+                                                            key={worker.id}
+                                                            value={String(worker.id)}
+                                                            onSelect={() => {
+                                                                updateMaterial(index, "worker_id", worker.id);
+                                                                updateMaterial(index, "worker_name", worker.name);
+                                                                setWorkerSearchOpen(prev => ({ ...prev, [index]: false }));
+                                                                fetchSuggestions(worker.id);
+                                                            }}
+                                                        >
+                                                            <CheckIcon className={`mr-2 h-4 w-4 ${m.worker_id === worker.id ? "opacity-100" : "opacity-0"}`} />
+                                                            {worker.name} {worker.designation && <span className="text-muted-foreground ml-2">({worker.designation})</span>}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            )}
                                         </CommandList>
                                     </Command>
                                 </PopoverContent>

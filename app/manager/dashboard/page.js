@@ -117,19 +117,69 @@ export default function ManagerDashboard() {
 
                         {/* Budget Warnings */}
                         {budgetWarnings.length > 0 && (
-                            <div className="fade-up" style={{ maxWidth: "1000px", margin: "0 auto 24px auto", padding: "0 16px" }}>
-                                {budgetWarnings.map((warning, i) => (
-                                    <div key={i} style={{ padding: "16px", marginBottom: "12px", borderRadius: "12px", background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", display: "flex", alignItems: "flex-start", gap: "12px" }}>
-                                        <span style={{ fontSize: "20px" }}>⚠️</span>
-                                        <div>
-                                            <h4 style={{ margin: "0 0 4px 0", color: "#b91c1c", fontWeight: "600", fontSize: "15px" }}>Budget Alert: {warning.name}</h4>
-                                            <p style={{ margin: 0, color: "#991b1b", fontSize: "14px" }}>
-                                                This project has utilized ₹{warning.spent.toLocaleString()} out of its ₹{warning.budget.toLocaleString()} budget 
-                                                ({((warning.spent / warning.budget) * 100).toFixed(1)}%). Please monitor pending approvals carefully.
-                                            </p>
+                            <div className="fade-up" style={{ maxWidth: "1000px", margin: "0 auto 28px auto", padding: "0 16px" }}>
+                                {budgetWarnings.map((warning, i) => {
+                                    const pct = Math.min((warning.spent / warning.budget) * 100, 100);
+                                    const isOver = pct >= 100;
+                                    return (
+                                        <div key={i} style={{
+                                            marginBottom: "12px",
+                                            borderRadius: "16px",
+                                            background: isOver
+                                                ? "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)"
+                                                : "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+                                            border: `1.5px solid ${isOver ? "#fca5a5" : "#fcd34d"}`,
+                                            overflow: "hidden",
+                                            boxShadow: isOver
+                                                ? "0 4px 20px rgba(239,68,68,0.12)"
+                                                : "0 4px 20px rgba(245,158,11,0.12)"
+                                        }}>
+                                            {/* Top bar */}
+                                            <div style={{ padding: "16px 20px 12px", display: "flex", alignItems: "flex-start", gap: "14px" }}>
+                                                <div style={{
+                                                    width: "40px", height: "40px", borderRadius: "10px", flexShrink: 0,
+                                                    background: isOver ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
+                                                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px"
+                                                }}>
+                                                    {isOver ? "🚨" : "⚠️"}
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "4px" }}>
+                                                        <h4 style={{ margin: 0, fontWeight: 700, fontSize: "15px", color: isOver ? "#991b1b" : "#92400e" }}>
+                                                            {isOver ? "Budget Exceeded" : "Budget Warning"}: {warning.name}
+                                                        </h4>
+                                                        <span style={{
+                                                            fontSize: "13px", fontWeight: 800,
+                                                            color: isOver ? "#ef4444" : "#f59e0b",
+                                                            background: isOver ? "rgba(239,68,68,0.1)" : "rgba(245,158,11,0.1)",
+                                                            padding: "2px 10px", borderRadius: "999px"
+                                                        }}>
+                                                            {pct.toFixed(1)}% used
+                                                        </span>
+                                                    </div>
+                                                    <p style={{ margin: 0, fontSize: "13px", color: isOver ? "#7f1d1d" : "#78350f" }}>
+                                                        ₹{warning.spent.toLocaleString()} spent of ₹{warning.budget.toLocaleString()} budget.
+                                                        {isOver ? " This project has exceeded its allocated budget." : " Approaching budget limit — review pending approvals carefully."}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {/* Progress bar */}
+                                            <div style={{ padding: "0 20px 16px" }}>
+                                                <div style={{ height: "8px", borderRadius: "999px", background: "rgba(0,0,0,0.08)", overflow: "hidden" }}>
+                                                    <div style={{
+                                                        height: "100%",
+                                                        width: `${pct}%`,
+                                                        borderRadius: "999px",
+                                                        background: isOver
+                                                            ? "linear-gradient(90deg, #f59e0b, #ef4444)"
+                                                            : "linear-gradient(90deg, #fbbf24, #f59e0b)",
+                                                        transition: "width 0.6s ease"
+                                                    }} />
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
 

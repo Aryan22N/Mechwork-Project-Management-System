@@ -18,6 +18,7 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
     const [pmNotes, setPmNotes] = useState({}); // { requestId: string }
     const [savingNote, setSavingNote] = useState({}); // { requestId: boolean }
     const [selectedRequest, setSelectedRequest] = useState(null); // Request to show in modal
+    const [budgetDialog, setBudgetDialog] = useState(null); // { pendingArgs, budgetData }
 
 
     const fetchRequests = async () => {
@@ -76,13 +77,14 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
         }, 4000);
     };
 
-    const handleAction = async (id, action, isClubbed = false, requestIds = [], projectId = null, currentPct = 0, isSubRequest = false) => {
+    const handleAction = async (id, action, isClubbed = false, requestIds = [], projectId = null, currentPct = 0, isSubRequest = false, overrideBudget = false) => {
         // id is used for the key (e.g., 'group-1-date' for clubbed)
         const actionKey = `${id}-${action}`;
         const now = Date.now();
         const lastTime = lastActionTimes[actionKey] || 0;
 
         const body = {};
+        if (overrideBudget) body.overrideBudget = true;
 
 
         // Cooldown check (5 seconds = 5000ms)
@@ -116,6 +118,18 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body)
             });
+
+            if (res.status === 409) {
+                const data = await res.json();
+                if (data.error === "BUDGET_EXCEEDED") {
+                    setBudgetDialog({
+                        pendingArgs: [id, action, isClubbed, requestIds, projectId, currentPct, isSubRequest],
+                        budgetData: data
+                    });
+                    setActionInProgress(null);
+                    return;
+                }
+            }
 
             if (res.ok) {
                 setLastActionTimes(prev => ({ ...prev, [actionKey]: now }));
@@ -162,6 +176,13 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
         } finally {
             setActionInProgress(null);
         }
+    };
+
+    const handleBudgetOverride = async () => {
+        if (!budgetDialog) return;
+        const [id, action, isClubbed, requestIds, projectId, currentPct, isSubRequest] = budgetDialog.pendingArgs;
+        setBudgetDialog(null);
+        await handleAction(id, action, isClubbed, requestIds, projectId, currentPct, isSubRequest, true);
     };
 
     const getStatusColor = (status) => {
@@ -486,6 +507,129 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                 request={selectedRequest}
                 role={role}
             />
+
+            {/* Budget Exceeded Dialog */}
+            {budgetDialog && (() => {
+                const bd = budgetDialog.budgetData;
+                const pct = Math.min(((bd.currentExpenses + bd.approvingAmount) / bd.allocatedBudget) * 100, 150);
+                const spentPct = Math.min((bd.currentExpenses / bd.allocatedBudget) * 100, 100);
+                const overflowPct = Math.min(pct - spentPct, 100 - spentPct);
+                return (
+                    <div style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 9999,
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "center",
+                        padding: "70px 16px 16px",
+                        overflowY: "auto",
+                    }}>
+                        {/* Backdrop */}
+                        <div
+                            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)" }}
+                            onClick={() => setBudgetDialog(null)}
+                        />
+                        {/* Card — max height with inner scroll */}
+                        <div style={{
+                            position: "relative",
+                            background: "#fff",
+                            borderRadius: "20px",
+                            width: "100%",
+                            maxWidth: "440px",
+                            maxHeight: "min(80vh, 600px)",
+                            display: "flex",
+                            flexDirection: "column",
+                            boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+                            border: "2px solid #fecaca",
+                            animation: "fadeUp 0.25s ease both",
+                        }}>
+                            {/* Scrollable body */}
+                            <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px 0" }}>
+                                {/* Title */}
+                                <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+                                    <div style={{
+                                        width: "42px", height: "42px", borderRadius: "12px", flexShrink: 0,
+                                        background: "#fee2e2", border: "1.5px solid #fca5a5",
+                                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: "20px"
+                                    }}>🚨</div>
+                                    <div>
+                                        <div style={{ fontWeight: 800, fontSize: "16px", color: "#991b1b", lineHeight: 1.2 }}>Budget Limit Exceeded!</div>
+                                        <div style={{ fontSize: "12px", color: "#b45309", marginTop: "2px" }}>Approving this will cross the project budget.</div>
+                                    </div>
+                                </div>
+
+                                {/* 2×2 grid breakdown */}
+                                <div style={{ background: "#fef2f2", borderRadius: "12px", padding: "12px", border: "1px solid #fecaca", marginBottom: "12px" }}>
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "10px" }}>
+                                        {[
+                                            { label: "Allocated", value: bd.allocatedBudget, color: "#1e40af" },
+                                            { label: "Already Spent", value: bd.currentExpenses, color: "#92400e" },
+                                            { label: "This Request", value: bd.approvingAmount, color: "#b45309" },
+                                            { label: "Remaining", value: bd.remainingBudget, color: "#065f46" },
+                                        ].map(row => (
+                                            <div key={row.label} style={{ background: "#fff", borderRadius: "8px", padding: "9px 11px", border: "1px solid #fca5a520" }}>
+                                                <div style={{ fontSize: "10px", color: "#6b7280", fontWeight: 500, marginBottom: "2px" }}>{row.label}</div>
+                                                <div style={{ fontSize: "13px", fontWeight: 700, color: row.color }}>₹{Number(row.value).toLocaleString()}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 4px 2px", borderTop: "1px solid #fca5a5" }}>
+                                        <span style={{ fontSize: "12px", fontWeight: 700, color: "#991b1b" }}>⚠️ Overrun</span>
+                                        <span style={{ fontSize: "15px", fontWeight: 800, color: "#ef4444" }}>₹{Number(bd.amountExceeded).toLocaleString()}</span>
+                                    </div>
+                                </div>
+
+                                {/* Progress bar */}
+                                <div style={{ marginBottom: "16px" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#6b7280", marginBottom: "5px" }}>
+                                        <span>Utilization after approval</span>
+                                        <span style={{ fontWeight: 700, color: pct > 100 ? "#ef4444" : "#f59e0b" }}>{pct.toFixed(1)}%</span>
+                                    </div>
+                                    <div style={{ height: "8px", borderRadius: "999px", background: "#e5e7eb", overflow: "hidden", position: "relative" }}>
+                                        <div style={{ position: "absolute", left: 0, top: 0, height: "100%", width: `${spentPct}%`, background: "#f59e0b" }} />
+                                        <div style={{ position: "absolute", left: `${spentPct}%`, top: 0, height: "100%", width: `${overflowPct}%`, background: "#ef4444" }} />
+                                    </div>
+                                    <div style={{ display: "flex", gap: "12px", marginTop: "4px" }}>
+                                        <span style={{ fontSize: "10px", color: "#92400e", display: "flex", alignItems: "center", gap: "3px" }}>
+                                            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#f59e0b", display: "inline-block" }} />Already spent
+                                        </span>
+                                        <span style={{ fontSize: "10px", color: "#991b1b", display: "flex", alignItems: "center", gap: "3px" }}>
+                                            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: "#ef4444", display: "inline-block" }} />This request
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Fixed footer — always visible, never scrolls */}
+                            <div style={{ padding: "12px 20px 16px", borderTop: "1px solid #fee2e2", flexShrink: 0 }}>
+                                <div style={{ display: "flex", gap: "10px", marginBottom: "7px" }}>
+                                    <button
+                                        onClick={() => setBudgetDialog(null)}
+                                        style={{
+                                            flex: 1, padding: "12px", borderRadius: "10px",
+                                            border: "1.5px solid #e5e7eb", background: "#f9fafb",
+                                            color: "#374151", fontWeight: 600, fontSize: "14px", cursor: "pointer"
+                                        }}
+                                    >Cancel</button>
+                                    <button
+                                        onClick={handleBudgetOverride}
+                                        style={{
+                                            flex: 1, padding: "12px", borderRadius: "10px", border: "none",
+                                            background: "linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)",
+                                            color: "#fff", fontWeight: 700, fontSize: "14px", cursor: "pointer",
+                                            boxShadow: "0 4px 14px rgba(239,68,68,0.3)"
+                                        }}
+                                    >Force Approve</button>
+                                </div>
+                                <p style={{ margin: 0, fontSize: "10px", color: "#9ca3af", textAlign: "center" }}>
+                                    This action will be flagged for audit.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }
