@@ -11,8 +11,14 @@ export async function GET(req) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const { searchParams } = new URL(req.url);
+        const projectId = searchParams.get("projectId");
+
+        const whereClause = { status: "ACTIVE" };
+        if (projectId) whereClause.id = parseInt(projectId, 10);
+
         const projects = await prisma.project.findMany({
-            where: { status: "ACTIVE" },
+            where: whereClause,
             include: {
                 requests: {
                     where: { status: "PAID" },
@@ -37,8 +43,6 @@ export async function GET(req) {
                 spent
             };
         });
-
-        console.log("Analytics debug:", JSON.stringify({ totalAllocated, totalUtilized, projects: projects.map(p => ({ name: p.name, budget: p.budget, status: p.status })) }));
 
         // Sort by whichever is higher — budget or spent — so projects with budget but no spending still show
         chartData.sort((a, b) => Math.max(b.budget, b.spent) - Math.max(a.budget, a.spent));
