@@ -591,7 +591,7 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
             </div>
 
             {/* --- General Bill Section --- */}
-            <div className="divider" style={{ margin: "24px 0", borderTop: "1px solid var(--border)" }} />
+            {/* <div className="divider" style={{ margin: "24px 0", borderTop: "1px solid var(--border)" }} />
             
             <div style={{ marginBottom: "32px" }}>
                 <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px", color: "var(--text)" }}>Add General Bill / Invoice Image</h3>
@@ -684,7 +684,7 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                         )}
                     </div>
                 </div>
-            </div>
+            </div> */}
 
             {showCamera && (
                 <CameraCapture
