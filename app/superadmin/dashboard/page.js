@@ -186,6 +186,12 @@ export default function SuperAdminDashboard() {
                                 href="/superadmin/projects/progress"
                             />
                             <DashboardCard
+                                icon="📊"
+                                title="Expense Analytics"
+                                description="Deep dive into your project expenses by category."
+                                href="/superadmin/analytics/expense-heads"
+                            />
+                            <DashboardCard
                                 icon="📜"
                                 title="Payment History"
                                 description="View a complete log of all past payments."
@@ -209,6 +215,7 @@ export default function SuperAdminDashboard() {
                                 description="Manage your workforce, tracking expenses per worker."
                                 href="/superadmin/workers"
                             />
+
                         </div>
 
                         {/* ── Budget Summary Card (with project filter) ── */}

@@ -40,7 +40,7 @@ export default function ManagerDashboard() {
 
         fetchUserData();
         fetchAnalytics();
-            
+
         setIsLoading(true);
         // Quick shimmer for transition
         setTimeout(() => setIsLoading(false), 500);
@@ -183,38 +183,45 @@ export default function ManagerDashboard() {
                             </div>
                         )}
 
-                        <div className="fade-up" style={{ 
-                            display: "grid", 
-                            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", 
-                            gap: "24px", 
+                        <div className="fade-up" style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                            gap: "24px",
                             padding: "0 0 32px 0",
                             maxWidth: "1000px",
                             margin: "0 auto"
                         }}>
-                        <DashboardCard 
-                            icon="✔️"
-                            title="Pending Approvals"
-                            description="Review and approve pending payment requests from supervisors."
-                            href="/manager/dashboard/approvals"
-                        />
-                        <DashboardCard 
-                            icon="📈"
-                            title="Project Progress"
-                            description="Track and update the completion percentage of your active projects."
-                            href="/manager/projects/progress"
-                        />
-                        <DashboardCard 
-                            icon="💸"
-                            title="Add Expense & Bill"
-                            description="Submit new expense requests and upload project bills."
-                            href="/manager/dashboard/add-expense"
-                        />
-                        <DashboardCard 
-                            icon="👷"
-                            title="Worker Management"
-                            description="Manage your workforce, tracking expenses per worker."
-                            href="/manager/workers"
-                        />
+                            <DashboardCard
+                                icon="✔️"
+                                title="Pending Approvals"
+                                description="Review and approve pending payment requests from supervisors."
+                                href="/manager/dashboard/approvals"
+                            />
+                            <DashboardCard
+                                icon="📈"
+                                title="Project Progress"
+                                description="Track and update the completion percentage of your active projects."
+                                href="/manager/projects/progress"
+                            />
+                            <DashboardCard
+                                icon="💸"
+                                title="Add Expense & Bill"
+                                description="Submit new expense requests and upload project bills."
+                                href="/manager/dashboard/add-expense"
+                            />
+                            <DashboardCard
+                                icon="📊"
+                                title="Expense Analytics"
+                                description="Deep dive into your project expenses by category."
+                                href="/manager/analytics/expense-heads"
+                            />
+                            <DashboardCard
+                                icon="👷"
+                                title="Worker Management"
+                                description="Manage your workforce, tracking expenses per worker."
+                                href="/manager/workers"
+                            />
+
                         </div>
                     </>
                 )}

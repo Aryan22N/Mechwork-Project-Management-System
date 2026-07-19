@@ -12,6 +12,7 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
     const [selectedHeads, setSelectedHeads] = useState([]);
     const [customHead, setCustomHead] = useState("");
     const [status, setStatus] = useState("ACTIVE");
+    const [budget, setBudget] = useState("");
 
     useEffect(() => {
         if (project && isOpen) {
@@ -19,6 +20,7 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
             setDescription(project.description || "");
             setSelectedHeads(project.expense_heads || []);
             setStatus(project.status || "ACTIVE");
+            setBudget(project.budget || "");
             setError("");
         }
     }, [project, isOpen]);
@@ -60,7 +62,8 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
                     name, 
                     description, 
                     expense_heads: selectedHeads,
-                    status
+                    status,
+                    budget
                 }),
             });
 
@@ -105,6 +108,19 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             required
+                        />
+                    </div>
+
+                    <div style={{ marginBottom: "16px" }}>
+                        <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 500, color: "var(--text-muted)" }}>Budget (₹)</label>
+                        <input
+                            type="number"
+                            className="input-field"
+                            placeholder="Enter total budget (optional)"
+                            value={budget}
+                            onChange={(e) => setBudget(e.target.value)}
+                            min="0"
+                            step="0.01"
                         />
                     </div>
 
