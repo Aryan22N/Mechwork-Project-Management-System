@@ -34,7 +34,6 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
             } else {
                 setLatitude("");
                 setLongitude("");
-                setRadius("");
             }
 
             setManagerIds(project.managers?.map(m => m.id) || []);
@@ -352,6 +351,20 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
                     backdrop-filter: blur(20px);
                     max-height: 90vh;
                     overflow-y: auto;
+                }
+                @media (min-width: 640px) {
+                    .modal-content {
+                        padding: 32px;
+                    }
+                }
+                @media (max-width: 480px) {
+                    .modal-content {
+                        padding: 16px;
+                        border-radius: 16px;
+                    }
+                    .modal-overlay {
+                        padding: 12px;
+                    }
                 }
             `}</style>
         </div>

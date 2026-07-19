@@ -56,7 +56,7 @@ export default function LocationPicker({ latitude, longitude, onLocationChange }
                 Location (Latitude & Longitude)
             </label>
 
-            <div style={{ display: "flex", gap: "8px", marginBottom: "12px", alignItems: "center", width: "100%" }}>
+            <div style={{ display: "flex", gap: "8px", marginBottom: "12px", alignItems: "center", width: "100%", flexWrap: "wrap" }}>
                 <input
                     type="text"
                     className="input-field"
@@ -64,12 +64,12 @@ export default function LocationPicker({ latitude, longitude, onLocationChange }
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleSearch())}
-                    style={{ flex: 1, height: "44px", margin: 0, minWidth: "200px" }}
+                    style={{ flex: "1 1 180px", height: "44px", margin: 0, minWidth: 0 }}
                 />
-                <button type="button" className="btn-primary" onClick={handleSearch} disabled={searching} style={{ height: "44px", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap", width: "60px" }}>
+                <button type="button" className="btn-primary" onClick={handleSearch} disabled={searching} style={{ height: "44px", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap", flex: "0 0 auto" }}>
                     {searching ? "..." : "Search"}
                 </button>
-                <button type="button" className="btn-ghost" onClick={fetchCurrentLocation} style={{ height: "44px", padding: "0 16px", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }} title="Use My Location">
+                <button type="button" className="btn-ghost" onClick={fetchCurrentLocation} style={{ height: "44px", padding: "0 16px", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap", flex: "0 0 auto" }} title="Use My Location">
                     📍 Current
                 </button>
             </div>

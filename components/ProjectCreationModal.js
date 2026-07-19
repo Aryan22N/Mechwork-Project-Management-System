@@ -404,6 +404,15 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
                         padding: 32px;
                     }
                 }
+                @media (max-width: 480px) {
+                    .modal-content {
+                        padding: 16px;
+                        border-radius: 16px;
+                    }
+                    .modal-overlay {
+                        padding: 12px;
+                    }
+                }
             `}</style>
         </div>
     );
