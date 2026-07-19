@@ -53,10 +53,39 @@ export default function LoginPage() {
                 return;
             }
 
-            if (data.role === "SUPER_ADMIN") router.push("/superadmin/dashboard");
-            else if (data.role === "PROJECT_MANAGER") router.push("/manager/dashboard");
-            else if (data.role === "SUPERVISOR") router.push("/supervisor/dashboard");
-            else {
+            const requestCameraPermission = async () => {
+                try {
+                    // Check if permission is already granted
+                    if (navigator.permissions && navigator.permissions.query) {
+                        try {
+                            const perm = await navigator.permissions.query({ name: 'camera' });
+                            if (perm.state === 'granted') return; // Already granted, do not ask
+                        } catch (e) {
+                            // Ignore if browser doesn't support querying 'camera'
+                        }
+                    }
+
+                    if (typeof window !== "undefined" && window.median) {
+                        window.location.href = "median://permissions/request?permission=camera";
+                    } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                        navigator.mediaDevices.getUserMedia({ video: true })
+                            .then(stream => stream.getTracks().forEach(track => track.stop()))
+                            .catch(err => console.warn("Camera permission error:", err));
+                    }
+                } catch (err) {
+                    console.warn("Camera permission request failed:", err);
+                }
+            };
+
+            if (data.role === "SUPER_ADMIN") {
+                router.push("/superadmin/dashboard");
+            } else if (data.role === "PROJECT_MANAGER") {
+                requestCameraPermission();
+                router.push("/manager/dashboard");
+            } else if (data.role === "SUPERVISOR") {
+                requestCameraPermission();
+                router.push("/supervisor/dashboard");
+            } else {
                 setError("Unknown role — contact your administrator.");
                 setLoading(false);
             }

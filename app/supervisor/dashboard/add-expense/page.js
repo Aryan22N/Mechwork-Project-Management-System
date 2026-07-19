@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import UnifiedExpenseBillForm from "@/components/UnifiedExpenseBillForm";
 import Link from "next/link";
 import Image from "next/image";
@@ -7,6 +9,7 @@ import { useRouter } from "next/navigation";
 
 export default function SupervisorAddExpensePage() {
     const router = useRouter();
+
     return (
         <div style={{ minHeight: "100vh", position: "relative", zIndex: 1 }} className="responsive-root">
             <div className="bg-mesh-custom" />
