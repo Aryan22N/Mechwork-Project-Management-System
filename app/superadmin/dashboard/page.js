@@ -192,6 +192,12 @@ export default function SuperAdminDashboard() {
                                 href="/superadmin/analytics/expense-heads"
                             />
                             <DashboardCard
+                                icon="📍"
+                                title="Supervisor Attendance"
+                                description="Track daily attendance and working hours of supervisors."
+                                href="/superadmin/attendance"
+                            />
+                            <DashboardCard
                                 icon="📜"
                                 title="Payment History"
                                 description="View a complete log of all past payments."
@@ -215,6 +221,7 @@ export default function SuperAdminDashboard() {
                                 description="Manage your workforce, tracking expenses per worker."
                                 href="/superadmin/workers"
                             />
+
 
                         </div>
 

@@ -1,20 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import LocationPicker from "./LocationPicker";
 
 const DEFAULT_EXPENSE_HEADS = ["Fuel", "Food", "Material", "Labour", "Misc"];
 
 export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated }) {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [budget, setBudget] = useState("");
-    const [managerIds, setManagerIds] = useState([]);
-    const [suggestedManagers, setSuggestedManagers] = useState([]);
-    const [managers, setManagers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [selectedHeads, setSelectedHeads] = useState([...DEFAULT_EXPENSE_HEADS]);
     const [customHead, setCustomHead] = useState("");
+    const [budget, setBudget] = useState("");
+    
+    // GPS Coordinates state
+    const [latitude, setLatitude] = useState("");
+    const [longitude, setLongitude] = useState("");
+    
+    const [managerIds, setManagerIds] = useState([]);
+    const [suggestedManagers, setSuggestedManagers] = useState([]);
+    const [managers, setManagers] = useState([]);
 
     useEffect(() => {
         if (isOpen) {
@@ -69,6 +75,11 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
         setSelectedHeads(prev => prev.filter(h => h !== head));
     };
 
+    const handleLocationChange = (lat, lng) => {
+        setLatitude(lat);
+        setLongitude(lng);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -86,7 +97,15 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ name, description, expense_heads: selectedHeads, budget: budget ? parseFloat(budget) : null, manager_ids: managerIds }),
+                body: JSON.stringify({ 
+                    name, 
+                    description, 
+                    expense_heads: selectedHeads, 
+                    budget: budget ? parseFloat(budget) : null, 
+                    manager_ids: managerIds,
+                    latitude: latitude ? parseFloat(latitude) : null,
+                    longitude: longitude ? parseFloat(longitude) : null
+                }),
             });
 
             if (!response.ok) {
@@ -98,6 +117,8 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
             setName("");
             setDescription("");
             setBudget("");
+            setLatitude("");
+            setLongitude("");
             setManagerIds([]);
             setSuggestedManagers([]);
             setSelectedHeads([...DEFAULT_EXPENSE_HEADS]);
@@ -111,14 +132,13 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
         }
     };
 
-    // Separate default heads from custom ones for display
     const customHeads = selectedHeads.filter(h => !DEFAULT_EXPENSE_HEADS.includes(h));
 
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content fade-up" onClick={(e) => e.stopPropagation()}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                    <h2 style={{ fontSize: "20px", fontWeight: 700 }}>🏗️ Create New Project</h2>
+                    <h2 style={{ fontSize: "20px", fontWeight: 700 }}>✨ Create New Project</h2>
                     <button className="btn-ghost" onClick={onClose}>✕</button>
                 </div>
 
@@ -152,15 +172,22 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
                         />
                     </div>
 
+                    <LocationPicker 
+                        latitude={latitude} 
+                        longitude={longitude} 
+                        onLocationChange={handleLocationChange} 
+                    />
+
                     <div style={{ marginBottom: "16px" }}>
-                        <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 500, color: "var(--text-muted)" }}>Allocated Budget (₹)</label>
+                        <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 500, color: "var(--text-muted)" }}>Budget (₹)</label>
                         <input
                             type="number"
-                            step="0.01"
                             className="input-field"
-                            placeholder="e.g. 50000"
+                            placeholder="Enter total budget (optional)"
                             value={budget}
                             onChange={(e) => setBudget(e.target.value)}
+                            min="0"
+                            step="0.01"
                         />
                     </div>
 
@@ -365,7 +392,7 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
                     padding: 24px;
                     border-radius: 20px;
                     width: 100%;
-                    max-width: 500px;
+                    max-width: 800px;
                     border: 1px solid rgba(15, 23, 42, 0.08);
                     box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12);
                     backdrop-filter: blur(20px);

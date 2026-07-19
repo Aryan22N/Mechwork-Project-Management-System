@@ -26,7 +26,23 @@ export async function GET(req) {
             orderBy: { created_at: "desc" }
         });
 
-        return NextResponse.json(projects);
+        // Find associated sites for these projects
+        const projectNames = projects.map(p => `${p.name} - Site`);
+        const sites = await prisma.site.findMany({
+            where: { name: { in: projectNames } }
+        });
+
+        const siteMap = {};
+        for (const site of sites) {
+            siteMap[site.name] = site;
+        }
+
+        const projectsWithSites = projects.map(p => ({
+            ...p,
+            site: siteMap[`${p.name} - Site`] || null
+        }));
+
+        return NextResponse.json(projectsWithSites);
     } catch (error) {
         console.error("GET projects error:", error);
         return NextResponse.json({ error: "Server error" }, { status: 500 });
@@ -40,7 +56,7 @@ export async function POST(req) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { name, description, expense_heads, budget, manager_ids } = await req.json();
+        const { name, description, expense_heads, budget, manager_ids, latitude, longitude, radius } = await req.json();
 
         if (!name) {
             return NextResponse.json({ error: "Project name is required" }, { status: 400 });
@@ -50,6 +66,7 @@ export async function POST(req) {
             return NextResponse.json({ error: "At least one manager is required" }, { status: 400 });
         }
 
+        // Create the Project
         const project = await prisma.project.create({
             data: {
                 name,
@@ -62,6 +79,19 @@ export async function POST(req) {
             },
             include: { managers: { select: { id: true, name: true, phone: true } } },
         });
+
+        // Create the Site if coordinates are provided
+        if (latitude != null && longitude != null) {
+            await prisma.site.create({
+                data: {
+                    name: `${name} - Site`,
+                    latitude: parseFloat(latitude),
+                    longitude: parseFloat(longitude),
+                    radius: radius ? parseFloat(radius) : 250,
+                    createdBy: user.id
+                }
+            });
+        }
 
         return NextResponse.json(project, { status: 201 });
     } catch (error) {

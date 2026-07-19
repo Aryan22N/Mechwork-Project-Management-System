@@ -26,6 +26,11 @@ model User {
   bills             Bill[]
   managed_projects Project[] @relation("ProjectManagers")
 
+  assignedSiteId String? @db.Uuid
+  assignedSite   Site?   @relation("SupervisorSite", fields: [assignedSiteId], references: [id])
+  created_sites  Site[]  @relation("SiteCreator")
+  attendances    Attendance[]
+
   @@map("users")
 }
 
@@ -164,4 +169,62 @@ model Reminder {
   created_at        DateTime         @default(now())
 
   @@map("reminders")
+}
+
+model Site {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  latitude  Float
+  longitude Float
+  radius    Float    @default(30)
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE
+  createdBy Int
+  creator   User     @relation("SiteCreator", fields: [createdBy], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  supervisors User[]       @relation("SupervisorSite")
+  attendances Attendance[]
+
+  @@map("sites")
+}
+
+enum AttendanceStatus {
+  CHECKED_IN
+  CHECKED_OUT
+  AUTO_CHECKOUT
+  REJECTED
+}
+
+model Attendance {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            Int
+  user              User     @relation(fields: [userId], references: [id])
+  siteId            String   @db.Uuid
+  site              Site     @relation(fields: [siteId], references: [id])
+  
+  checkInTime       DateTime @default(now())
+  checkOutTime      DateTime?
+  
+  checkInLatitude   Float
+  checkInLongitude  Float
+  checkOutLatitude  Float?
+  checkOutLongitude Float?
+  
+  checkInAccuracy   Float
+  checkOutAccuracy  Float?
+  
+  durationMinutes   Int?
+  
+  status            AttendanceStatus @default(CHECKED_IN)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([siteId])
+  @@index([status])
+  @@index([checkInTime])
+  @@index([checkOutTime])
+  @@map("attendances")
 }

@@ -15,6 +15,7 @@ export default function SuperAdminProjectsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [projectToEdit, setProjectToEdit] = useState(null);
+    const [filterStatus, setFilterStatus] = useState("ACTIVE"); // ACTIVE | FINISHED
 
     const fetchProjects = () => {
         fetch("/api/projects")
@@ -43,6 +44,8 @@ export default function SuperAdminProjectsPage() {
     const handleProjectUpdated = () => {
         fetchProjects();
     };
+
+    const filteredProjects = projects.filter(p => p.status === filterStatus);
 
     return (
         <div style={{ minHeight: "100vh", position: "relative", zIndex: 1 }} className="responsive-root">
@@ -76,8 +79,42 @@ export default function SuperAdminProjectsPage() {
                     <ShimmerLoader />
                 ) : (
                     <div className="fade-up" style={{ marginBottom: "36px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "16px" }}>
                             <h2 className="section-title" style={{ margin: 0 }}>Manage Projects</h2>
+                            
+                            <div style={{ display: "flex", gap: "8px", background: "rgba(0,0,0,0.2)", padding: "4px", borderRadius: "8px", flex: "1 1 auto", maxWidth: "400px" }}>
+                                <button 
+                                    onClick={() => setFilterStatus("ACTIVE")}
+                                    style={{ 
+                                        flex: 1,
+                                        padding: "8px 16px", 
+                                        borderRadius: "6px",
+                                        background: filterStatus === "ACTIVE" ? "var(--primary)" : "transparent",
+                                        color: filterStatus === "ACTIVE" ? "#fff" : "var(--text-muted)",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontWeight: "600",
+                                        transition: "all 0.2s ease"
+                                    }}>
+                                    Unfinished
+                                </button>
+                                <button 
+                                    onClick={() => setFilterStatus("FINISHED")}
+                                    style={{ 
+                                        flex: 1,
+                                        padding: "8px 16px", 
+                                        borderRadius: "6px",
+                                        background: filterStatus === "FINISHED" ? "var(--primary)" : "transparent",
+                                        color: filterStatus === "FINISHED" ? "#fff" : "var(--text-muted)",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontWeight: "600",
+                                        transition: "all 0.2s ease"
+                                    }}>
+                                    Finished
+                                </button>
+                            </div>
+
                             <button
                                 className="btn-primary mobile-only-btn"
                                 style={{ padding: "6px 14px", fontSize: "12px", width: "auto" }}
@@ -87,7 +124,10 @@ export default function SuperAdminProjectsPage() {
                             </button>
                         </div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
-                            {projects.map(project => (
+                            {filteredProjects.length === 0 ? (
+                                <p style={{ color: "var(--text-muted)", gridColumn: "1 / -1" }}>No {filterStatus.toLowerCase()} projects found.</p>
+                            ) : (
+                                filteredProjects.map(project => (
                                 <div key={project.id} className="glass-card" style={{ padding: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                     <div>
                                         <div style={{ fontWeight: 700, fontSize: "15px", marginBottom: "4px" }}>{project.name}</div>
@@ -137,7 +177,7 @@ export default function SuperAdminProjectsPage() {
                                         </button>
                                     </div>
                                 </div>
-                            ))}
+                            )))}
                         </div>
                     </div>
                 )}

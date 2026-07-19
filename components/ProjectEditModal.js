@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 
+import LocationPicker from "./LocationPicker";
+
 const DEFAULT_EXPENSE_HEADS = ["Fuel", "Food", "Material", "Labour", "Misc"];
 
 export default function ProjectEditModal({ isOpen, onClose, project, onProjectUpdated }) {
@@ -13,6 +15,8 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
     const [customHead, setCustomHead] = useState("");
     const [status, setStatus] = useState("ACTIVE");
     const [budget, setBudget] = useState("");
+    const [latitude, setLatitude] = useState("");
+    const [longitude, setLongitude] = useState("");
     const [managerIds, setManagerIds] = useState([]);
     const [managers, setManagers] = useState([]);
 
@@ -23,6 +27,16 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
             setSelectedHeads(project.expense_heads || []);
             setStatus(project.status || "ACTIVE");
             setBudget(project.budget || "");
+
+            if (project.site) {
+                setLatitude(project.site.latitude);
+                setLongitude(project.site.longitude);
+            } else {
+                setLatitude("");
+                setLongitude("");
+                setRadius("");
+            }
+
             setManagerIds(project.managers?.map(m => m.id) || []);
             setError("");
 
@@ -59,6 +73,11 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
         setSelectedHeads(prev => prev.filter(h => h !== head));
     };
 
+    const handleLocationChange = (lat, lng) => {
+        setLatitude(lat);
+        setLongitude(lng);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -76,13 +95,15 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ 
-                    name, 
-                    description, 
+                body: JSON.stringify({
+                    name,
+                    description,
                     expense_heads: selectedHeads,
                     status,
                     budget,
-                    manager_ids: managerIds
+                    manager_ids: managerIds,
+                    latitude: latitude ? parseFloat(latitude) : null,
+                    longitude: longitude ? parseFloat(longitude) : null
                 }),
             });
 
@@ -129,6 +150,12 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
                             required
                         />
                     </div>
+
+                    <LocationPicker
+                        latitude={latitude}
+                        longitude={longitude}
+                        onLocationChange={handleLocationChange}
+                    />
 
                     <div style={{ marginBottom: "16px" }}>
                         <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 500, color: "var(--text-muted)" }}>Budget (₹)</label>
@@ -182,9 +209,9 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
 
                     <div style={{ marginBottom: "16px" }}>
                         <label style={{ display: "block", marginBottom: "8px", fontSize: "14px", fontWeight: 500, color: "var(--text-muted)" }}>Status</label>
-                        <select 
-                            className="input-field" 
-                            value={status} 
+                        <select
+                            className="input-field"
+                            value={status}
                             onChange={(e) => setStatus(e.target.value)}
                             style={{ appearance: "none", cursor: "pointer" }}
                         >
@@ -206,7 +233,7 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
 
                     <div style={{ marginBottom: "24px" }}>
                         <label style={{ display: "block", marginBottom: "10px", fontSize: "14px", fontWeight: 500, color: "var(--text-muted)" }}>Expense Heads</label>
-                        
+
                         <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
                             {DEFAULT_EXPENSE_HEADS.map(head => (
                                 <label
@@ -319,7 +346,7 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
                     padding: 24px;
                     border-radius: 20px;
                     width: 100%;
-                    max-width: 500px;
+                    max-width: 800px;
                     border: 1px solid rgba(15, 23, 42, 0.08);
                     box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.12);
                     backdrop-filter: blur(20px);

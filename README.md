@@ -1,6 +1,6 @@
 # Mechwork Project Management System
 
-A comprehensive web-based platform designed exclusively for **Mechwork Private Limited** to manage solar field operations, project progress, workforce tracking, and multi-tier payment workflows. Built with a modern stack featuring **Next.js 16**, **Neon Postgres**, **Prisma**, **JWT**, and **Tailwind CSS / shadcn**.
+A comprehensive web-based platform designed exclusively for **Mechwork Private Limited** to manage solar field operations, project progress, workforce tracking, and multi-tier workflows. Built with a modern stack featuring **Next.js 16**, **Neon Postgres**, **Prisma**, **JWT**, and **Tailwind CSS / shadcn**.
 
 ## 🌟 Key Features
 

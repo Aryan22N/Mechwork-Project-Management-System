@@ -121,6 +121,12 @@ export default function SupervisorDashboard() {
                                 description="View the status of your recent payment requests."
                                 href="/supervisor/dashboard/requests"
                             />
+                            <DashboardCard
+                                icon="📍"
+                                title="Attendance"
+                                description="Check in and check out from your assigned work location."
+                                href="/supervisor/attendance"
+                            />
                         </div>
 
                     </>
