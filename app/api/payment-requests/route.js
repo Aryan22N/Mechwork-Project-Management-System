@@ -48,7 +48,9 @@ export async function GET(req) {
                     take: limit
                 });
             } else {
-                const pmWhere = {};
+                const pmWhere = {
+                    project: { managers: { some: { id: user.id } } }
+                };
             if (statusParam && statusParam !== "ALL") {
                 pmWhere.status = statusParam;
             } else if (!statusParam) {

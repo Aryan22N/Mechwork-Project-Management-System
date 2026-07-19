@@ -13,6 +13,8 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
     const [customHead, setCustomHead] = useState("");
     const [status, setStatus] = useState("ACTIVE");
     const [budget, setBudget] = useState("");
+    const [managerIds, setManagerIds] = useState([]);
+    const [managers, setManagers] = useState([]);
 
     useEffect(() => {
         if (project && isOpen) {
@@ -21,7 +23,17 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
             setSelectedHeads(project.expense_heads || []);
             setStatus(project.status || "ACTIVE");
             setBudget(project.budget || "");
+            setManagerIds(project.managers?.map(m => m.id) || []);
             setError("");
+
+            fetch("/api/members")
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setManagers(data.filter(m => m.role === "PROJECT_MANAGER"));
+                    }
+                })
+                .catch(err => console.error("Failed to fetch managers", err));
         }
     }, [project, isOpen]);
 
@@ -52,6 +64,12 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
         setLoading(true);
         setError("");
 
+        if (managerIds.length === 0) {
+            setError("At least one manager must be assigned.");
+            setLoading(false);
+            return;
+        }
+
         try {
             const response = await fetch(`/api/projects/${project.id}`, {
                 method: "PATCH",
@@ -63,7 +81,8 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
                     description, 
                     expense_heads: selectedHeads,
                     status,
-                    budget
+                    budget,
+                    manager_ids: managerIds
                 }),
             });
 
@@ -122,6 +141,43 @@ export default function ProjectEditModal({ isOpen, onClose, project, onProjectUp
                             min="0"
                             step="0.01"
                         />
+                    </div>
+
+                    <div style={{ marginBottom: "16px" }}>
+                        <label style={{ display: "block", marginBottom: "10px", fontSize: "14px", fontWeight: 500, color: "var(--text-muted)" }}>
+                            Assign Managers (Required)
+                        </label>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", maxHeight: "120px", overflowY: "auto", padding: "4px" }}>
+                            {managers.map(m => (
+                                <label
+                                    key={m.id}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "6px",
+                                        padding: "8px 14px",
+                                        borderRadius: "10px",
+                                        cursor: "pointer",
+                                        fontSize: "13px",
+                                        fontWeight: 500,
+                                        transition: "all 0.2s ease",
+                                        background: managerIds.includes(m.id) ? "rgba(59,130,246,0.1)" : "rgba(0,0,0,0.03)",
+                                        color: managerIds.includes(m.id) ? "var(--primary)" : "var(--text-muted)",
+                                        border: managerIds.includes(m.id) ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(0,0,0,0.06)",
+                                    }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={managerIds.includes(m.id)}
+                                        onChange={() => {
+                                            setManagerIds(prev => prev.includes(m.id) ? prev.filter(id => id !== m.id) : [...prev, m.id]);
+                                        }}
+                                        style={{ accentColor: "var(--primary)", width: "15px", height: "15px" }}
+                                    />
+                                    {m.name || m.phone}
+                                </label>
+                            ))}
+                        </div>
                     </div>
 
                     <div style={{ marginBottom: "16px" }}>

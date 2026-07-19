@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const DEFAULT_EXPENSE_HEADS = ["Fuel", "Food", "Material", "Labour", "Misc"];
 
@@ -8,10 +8,44 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [budget, setBudget] = useState("");
+    const [managerIds, setManagerIds] = useState([]);
+    const [suggestedManagers, setSuggestedManagers] = useState([]);
+    const [managers, setManagers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [selectedHeads, setSelectedHeads] = useState([...DEFAULT_EXPENSE_HEADS]);
     const [customHead, setCustomHead] = useState("");
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch("/api/members")
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setManagers(data.filter(m => m.role === "PROJECT_MANAGER"));
+                    }
+                })
+                .catch(err => console.error("Failed to fetch managers", err));
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (!name || name.trim().length === 0) {
+            setSuggestedManagers([]);
+            return;
+        }
+        const delay = setTimeout(() => {
+            fetch(`/api/managers/suggestions?projectName=${encodeURIComponent(name.trim())}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setSuggestedManagers(data);
+                    }
+                })
+                .catch(err => console.error("Failed to fetch suggestions", err));
+        }, 500);
+        return () => clearTimeout(delay);
+    }, [name]);
 
     if (!isOpen) return null;
 
@@ -40,13 +74,19 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
         setLoading(true);
         setError("");
 
+        if (managerIds.length === 0) {
+            setError("At least one manager must be assigned.");
+            setLoading(false);
+            return;
+        }
+
         try {
             const response = await fetch("/api/projects", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ name, description, expense_heads: selectedHeads, budget: budget ? parseFloat(budget) : null }),
+                body: JSON.stringify({ name, description, expense_heads: selectedHeads, budget: budget ? parseFloat(budget) : null, manager_ids: managerIds }),
             });
 
             if (!response.ok) {
@@ -58,6 +98,8 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
             setName("");
             setDescription("");
             setBudget("");
+            setManagerIds([]);
+            setSuggestedManagers([]);
             setSelectedHeads([...DEFAULT_EXPENSE_HEADS]);
             setCustomHead("");
             onProjectCreated(newProject);
@@ -120,6 +162,82 @@ export default function ProjectCreationModal({ isOpen, onClose, onProjectCreated
                             value={budget}
                             onChange={(e) => setBudget(e.target.value)}
                         />
+                    </div>
+
+                    <div style={{ marginBottom: "16px" }}>
+                        <label style={{ display: "block", marginBottom: "10px", fontSize: "14px", fontWeight: 500, color: "var(--text-muted)" }}>
+                            Assign Managers (Required)
+                        </label>
+                        
+                        {/* Suggested Managers */}
+                        {suggestedManagers.length > 0 && (
+                            <div style={{ marginBottom: "12px", padding: "10px", background: "rgba(59,130,246,0.05)", borderRadius: "8px", border: "1px solid rgba(59,130,246,0.2)" }}>
+                                <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--primary)", marginBottom: "8px" }}>✨ Suggested for this location</div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                                    {suggestedManagers.map(m => (
+                                        <label
+                                            key={`sug-${m.id}`}
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "6px",
+                                                padding: "6px 12px",
+                                                borderRadius: "8px",
+                                                cursor: "pointer",
+                                                fontSize: "12px",
+                                                fontWeight: 500,
+                                                background: managerIds.includes(m.id) ? "var(--primary)" : "#fff",
+                                                color: managerIds.includes(m.id) ? "#fff" : "var(--text-main)",
+                                                border: "1px solid rgba(0,0,0,0.1)",
+                                                transition: "all 0.2s ease"
+                                            }}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={managerIds.includes(m.id)}
+                                                onChange={() => {
+                                                    setManagerIds(prev => prev.includes(m.id) ? prev.filter(id => id !== m.id) : [...prev, m.id]);
+                                                }}
+                                                style={{ display: "none" }}
+                                            />
+                                            {managerIds.includes(m.id) ? "✓" : "+"} {m.name || m.phone}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", maxHeight: "120px", overflowY: "auto", padding: "4px" }}>
+                            {managers.map(m => (
+                                <label
+                                    key={m.id}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "6px",
+                                        padding: "8px 14px",
+                                        borderRadius: "10px",
+                                        cursor: "pointer",
+                                        fontSize: "13px",
+                                        fontWeight: 500,
+                                        transition: "all 0.2s ease",
+                                        background: managerIds.includes(m.id) ? "rgba(59,130,246,0.1)" : "rgba(0,0,0,0.03)",
+                                        color: managerIds.includes(m.id) ? "var(--primary)" : "var(--text-muted)",
+                                        border: managerIds.includes(m.id) ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(0,0,0,0.06)",
+                                    }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={managerIds.includes(m.id)}
+                                        onChange={() => {
+                                            setManagerIds(prev => prev.includes(m.id) ? prev.filter(id => id !== m.id) : [...prev, m.id]);
+                                        }}
+                                        style={{ accentColor: "var(--primary)", width: "15px", height: "15px" }}
+                                    />
+                                    {m.name || m.phone}
+                                </label>
+                            ))}
+                        </div>
                     </div>
 
                     {/* Expense Heads Section */}

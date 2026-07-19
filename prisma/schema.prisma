@@ -24,6 +24,7 @@ model User {
   approved_requests PaymentRequest[] @relation("PMApprovals")
   progress_updates ProjectProgress[]
   bills             Bill[]
+  managed_projects Project[] @relation("ProjectManagers")
 
   @@map("users")
 }
@@ -41,6 +42,7 @@ model Project {
   reminders        Reminder[]
   budget           Decimal?          @db.Decimal(12, 2)
   created_at       DateTime          @default(now())
+  managers         User[]            @relation("ProjectManagers")
 
   @@map("projects")
 }

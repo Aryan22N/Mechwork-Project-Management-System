@@ -20,7 +20,12 @@ export default function SuperAdminProjectsPage() {
         fetch("/api/projects")
             .then(res => res.json())
             .then(data => {
-                setProjects(data);
+                if (Array.isArray(data)) {
+                    setProjects(data);
+                } else {
+                    console.error("Expected array but got:", data);
+                    setProjects([]);
+                }
             })
             .catch(err => console.error(err));
     };

@@ -11,7 +11,7 @@ export async function PATCH(req, { params }) {
 
         const { id } = await params;
         const body = await req.json();
-        const { name, description, expense_heads, status, budget } = body;
+        const { name, description, expense_heads, status, budget, manager_ids } = body;
 
         const updatedProject = await prisma.project.update({
             where: { id: parseInt(id) },
@@ -21,7 +21,11 @@ export async function PATCH(req, { params }) {
                 ...(expense_heads && { expense_heads: Array.isArray(expense_heads) ? expense_heads : [] }),
                 ...(status && { status }),
                 ...(budget !== undefined && { budget: budget ? parseFloat(budget) : null }),
+                ...(manager_ids !== undefined && Array.isArray(manager_ids) && { 
+                    managers: { set: manager_ids.map(mId => ({ id: parseInt(mId) })) }
+                }),
             },
+            include: { managers: { select: { id: true, name: true, phone: true } } }
         });
 
         return NextResponse.json(updatedProject);
@@ -41,6 +45,7 @@ export async function GET(req, { params }) {
         const { id } = await params;
         const project = await prisma.project.findUnique({
             where: { id: parseInt(id) },
+            include: { managers: { select: { id: true, name: true, phone: true } } }
         });
 
         if (!project) {

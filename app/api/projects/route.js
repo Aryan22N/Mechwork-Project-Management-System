@@ -14,8 +14,15 @@ export async function GET(req) {
         const { searchParams } = new URL(req.url);
         const status = searchParams.get("status");
 
+        const whereClause = {};
+        if (status) whereClause.status = status;
+        if (user.role === "PROJECT_MANAGER") {
+            whereClause.managers = { some: { id: user.id } };
+        }
+
         const projects = await prisma.project.findMany({
-            where: status ? { status } : {},
+            where: whereClause,
+            include: { managers: { select: { id: true, name: true, phone: true } } },
             orderBy: { created_at: "desc" }
         });
 
@@ -33,10 +40,14 @@ export async function POST(req) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { name, description, expense_heads, budget } = await req.json();
+        const { name, description, expense_heads, budget, manager_ids } = await req.json();
 
         if (!name) {
             return NextResponse.json({ error: "Project name is required" }, { status: 400 });
+        }
+
+        if (!manager_ids || !Array.isArray(manager_ids) || manager_ids.length === 0) {
+            return NextResponse.json({ error: "At least one manager is required" }, { status: 400 });
         }
 
         const project = await prisma.project.create({
@@ -45,7 +56,11 @@ export async function POST(req) {
                 description: description || "",
                 expense_heads: Array.isArray(expense_heads) ? expense_heads : [],
                 budget: budget ? parseFloat(budget) : null,
+                managers: {
+                    connect: manager_ids.map(id => ({ id: parseInt(id) }))
+                },
             },
+            include: { managers: { select: { id: true, name: true, phone: true } } },
         });
 
         return NextResponse.json(project, { status: 201 });
