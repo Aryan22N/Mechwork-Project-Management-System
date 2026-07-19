@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import Toast from "./Toast";
 import ExpenseDetailModal from "./ExpenseDetailModal";
 
@@ -30,6 +31,12 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
             }
             if (selectedProjectId) {
                 params.append("project", selectedProjectId);
+            }
+            if (role === "MANAGER_OWN_REQUESTS") {
+                params.append("own", "true");
+            }
+            if (limit) {
+                params.append("limit", limit);
             }
             const res = await fetch(`/api/payment-requests?${params.toString()}`);
             const data = await res.json();
@@ -64,7 +71,7 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
     }, [refreshTrigger, role, showFilter, statusFilter, selectedProjectId]);
 
     useEffect(() => {
-        if (role === "SUPER_ADMIN" || role === "PROJECT_MANAGER" || (showFilter && role === "SUPERVISOR")) {
+        if (role === "SUPER_ADMIN" || role === "PROJECT_MANAGER" || role === "MANAGER_OWN_REQUESTS" || (showFilter && role === "SUPERVISOR")) {
             fetchProjects();
         }
     }, [role, showFilter]);
@@ -245,9 +252,28 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
         }
     };
 
+    const handleDeleteRequest = async (id) => {
+        if (!confirm("Are you sure you want to delete this expense request?")) return;
+        
+        try {
+            const res = await fetch(`/api/payment-requests/${id}`, {
+                method: "DELETE"
+            });
+            if (res.ok) {
+                addToast("Deleted", "The request has been deleted.", "success");
+                setRequests(prev => prev.filter(r => r.id !== id));
+            } else {
+                addToast("Failed", "Could not delete the request.", "error");
+            }
+        } catch (err) {
+            console.error("Error deleting request:", err);
+            addToast("Error", "Network error.", "error");
+        }
+    };
+
     let filteredRequests = requests;
     
-    if (selectedProjectId && (role === "SUPER_ADMIN" || (showFilter && role === "SUPERVISOR"))) {
+    if (selectedProjectId && (role === "SUPER_ADMIN" || role === "MANAGER_OWN_REQUESTS" || (showFilter && role === "SUPERVISOR"))) {
         filteredRequests = filteredRequests.filter(req => req.project_id === selectedProjectId);
     }
     
@@ -282,9 +308,9 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                 }
             `}</style>
             <Toast toasts={toasts} />
-            <h2 className="section-title">{role === "SUPERVISOR" ? "Recent Requests" : "Pending Approvals"}</h2>
+            <h2 className="section-title">{role === "SUPERVISOR" || role === "MANAGER_OWN_REQUESTS" ? "Recent Requests" : "Pending Approvals"}</h2>
 
-            {(role === "SUPER_ADMIN" || role === "PROJECT_MANAGER" || (showFilter && role === "SUPERVISOR")) && (
+            {(role === "SUPER_ADMIN" || role === "PROJECT_MANAGER" || role === "MANAGER_OWN_REQUESTS" || (showFilter && role === "SUPERVISOR")) && (
                 <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
                     <div>
                         <label className="stat-label">Filter by Project</label>
@@ -326,7 +352,7 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                 <div className="premium-shimmer" style={{ height: "400px", width: "100%", borderRadius: "20px", border: "1px solid #e2e8f0" }}></div>
             ) : filteredRequests.length === 0 ? (
                 <div className="glass-card" style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)" }}>
-                    {(role === "SUPER_ADMIN" || role === "PROJECT_MANAGER" || (showFilter && role === "SUPERVISOR")) && selectedProjectId
+                    {(role === "SUPER_ADMIN" || role === "PROJECT_MANAGER" || role === "MANAGER_OWN_REQUESTS" || (showFilter && role === "SUPERVISOR")) && selectedProjectId
                         ? "No payment requests found for this project."
                         : "No payment requests found."}
                 </div>
@@ -360,13 +386,34 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
                                     )}
                                 </div>
                                 <div style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                                    <button 
-                                        className="btn-ghost"
-                                        style={{ width: "fit-content", padding: "8px 16px", fontSize: "12px", border: "1px solid var(--border)" }}
-                                        onClick={() => setSelectedRequest(req)}
-                                    >
-                                        📄 View Details
-                                    </button>
+                                    <div style={{ display: "flex", gap: "8px" }}>
+                                        <button 
+                                            className="btn-ghost"
+                                            style={{ padding: "8px 16px", fontSize: "12px", border: "1px solid var(--border)" }}
+                                            onClick={() => setSelectedRequest(req)}
+                                        >
+                                            📄 View Details
+                                        </button>
+                                        
+                                        {((role === "SUPERVISOR" && req.status === "PENDING_PM") || (role === "MANAGER_OWN_REQUESTS" && (req.status === "PENDING_ADMIN" || req.status === "PENDING_PM"))) && !req.isClubbed && (
+                                            <>
+                                                <Link 
+                                                    href={`/${role === "SUPERVISOR" ? "supervisor" : "manager"}/dashboard/edit-expense/${req.id}`}
+                                                    className="btn-ghost"
+                                                    style={{ padding: "8px 16px", fontSize: "12px", border: "1px solid var(--primary)", color: "var(--primary)", textDecoration: "none", display: "inline-block" }}
+                                                >
+                                                    ✏️ Edit
+                                                </Link>
+                                                <button 
+                                                    className="btn-ghost"
+                                                    style={{ padding: "8px 16px", fontSize: "12px", border: "1px solid #fecaca", color: "#ef4444", background: "#fef2f2" }}
+                                                    onClick={() => handleDeleteRequest(req.id)}
+                                                >
+                                                    🗑️ Delete
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
 
                                     {req.isClubbed && req.subRequests && role === "PROJECT_MANAGER" && (
                                         <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>

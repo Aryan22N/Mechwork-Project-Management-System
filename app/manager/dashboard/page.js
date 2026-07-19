@@ -210,6 +210,12 @@ export default function ManagerDashboard() {
                                 href="/manager/dashboard/add-expense"
                             />
                             <DashboardCard
+                                icon="📄"
+                                title="Recent Requests"
+                                description="View, edit, and delete the expense requests you have raised."
+                                href="/manager/dashboard/requests"
+                            />
+                            <DashboardCard
                                 icon="📊"
                                 title="Expense Analytics"
                                 description="Deep dive into your project expenses by category."

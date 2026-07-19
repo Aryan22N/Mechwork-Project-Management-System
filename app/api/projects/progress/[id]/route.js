@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export async function PATCH(req, { params }) {
     try {
         const user = await getUser();
-        if (!user || !hasRole(user, ["PROJECT_MANAGER", "SUPERVISOR"])) {
+        if (!user || !hasRole(user, ["SUPER_ADMIN", "PROJECT_MANAGER", "SUPERVISOR"])) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -37,7 +37,7 @@ export async function PATCH(req, { params }) {
 export async function DELETE(req, { params }) {
     try {
         const user = await getUser();
-        if (!user || !hasRole(user, ["PROJECT_MANAGER", "SUPERVISOR"])) {
+        if (!user || !hasRole(user, ["SUPER_ADMIN", "PROJECT_MANAGER", "SUPERVISOR"])) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
+import CameraPermissionModal from "@/components/CameraPermissionModal";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,7 +23,10 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={inter.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <CameraPermissionModal />
+      </body>
     </html>
   );
 }

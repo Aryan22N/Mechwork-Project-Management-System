@@ -15,23 +15,24 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { CheckIcon, ChevronsUpDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-export default function UnifiedExpenseBillForm({ onSuccess }) {
+export default function UnifiedExpenseBillForm({ onSuccess, initialData }) {
     // --- Shared State ---
     const [projects, setProjects] = useState([]);
-    const [selectedProject, setSelectedProject] = useState("");
+    const [selectedProject, setSelectedProject] = useState(initialData?.project_id || "");
     const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [showSuccess, setShowSuccess] = useState(false);
 
     // --- Expense / Material State ---
-    const [materials, setMaterials] = useState([{ name: "", quantity: "", unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
+    const [materials, setMaterials] = useState([{ name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
     const [expenseHeads, setExpenseHeads] = useState([]);
     const [uploadingMaterial, setUploadingMaterial] = useState(null); // index of material being uploaded
     const [suggestions, setSuggestions] = useState({}); // { worker_id: ["Expense 1", "Expense 2"] }
     const [workerSearchOpen, setWorkerSearchOpen] = useState({}); // { index: boolean }
     const [showCamera, setShowCamera] = useState(false);
     const [activeMaterialIndex, setActiveMaterialIndex] = useState(null);
-    const [prevProjectId, setPrevProjectId] = useState("");
+    const [prevProjectId, setPrevProjectId] = useState(initialData?.project_id || "");
     const materialFileInputRef = useRef(null);
 
     // --- General Bill State ---
@@ -61,9 +62,8 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                 setExpenseHeads([]);
             }
 
-            // Only reset materials if the project ID actually changed from its previous value
             if (selectedProject !== prevProjectId) {
-                setMaterials([{ name: "", quantity: "", unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
+                setMaterials([{ name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
                 setPrevProjectId(selectedProject);
             }
         } else {
@@ -71,6 +71,26 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
             setPrevProjectId("");
         }
     }, [selectedProject, projects, prevProjectId]);
+
+    useEffect(() => {
+        if (!initialData) {
+            setMaterials([
+                { name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }
+            ]);
+        } else {
+            setMaterials(initialData.materials.map(m => ({
+                name: m.name,
+                quantity: m.quantity,
+                unit_price: m.unit_price,
+                image_url: m.image_url || "",
+                image_file_id: m.image_file_id || "",
+                worker_id: m.worker_id || null,
+                worker_name: m.worker_name || "",
+                is_recurring: false,
+                reminder_day: ""
+            })));
+        }
+    }, [initialData]);
 
     // --- Shared Authenticator ---
     const authenticator = async () => {
@@ -88,7 +108,6 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
     };
 
     // --- Worker Autocomplete ---
-    // Store per-row: { [index]: { query, results, loading } }
     const [workerSearch, setWorkerSearch] = useState({});
 
     const getWorkerSearch = (index) => workerSearch[index] || { query: "", results: [], loading: false };
@@ -127,7 +146,7 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
 
     // --- Material / Expense Handlers ---
     const addMaterial = () => {
-        setMaterials([...materials, { name: "", quantity: 1, unit_price: 0, image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
+        setMaterials([...materials, { name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
     };
 
     const removeMaterial = (index) => {
@@ -175,41 +194,7 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
         }
     };
 
-    // --- General Bill Handlers ---
-    const handleBillImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setIsUploadingBill(true);
-        setError("");
-        setBillPreviewUrl(URL.createObjectURL(file));
-
-        try {
-            const authParams = await authenticator();
-            const { signature, expire, token, publicKey, urlEndpoint } = authParams;
-
-            const result = await upload({
-                file,
-                fileName: `bill_${Date.now()}.png`,
-                publicKey,
-                urlEndpoint,
-                signature,
-                expire,
-                token
-            });
-
-            setBillUploadData({ url: result.url, fileId: result.fileId });
-            setBillPreviewUrl(result.url);
-        } catch (err) {
-            console.error("Bill Upload Error:", err);
-            setError("Failed to upload bill image. Please try again.");
-            setBillPreviewUrl(null);
-        } finally {
-            setIsUploadingBill(false);
-        }
-    };
-
-    const totalAmount = materials.reduce((sum, m) => sum + (m.quantity * (m.unit_price || 0)), 0);
+    const totalAmount = materials.reduce((sum, m) => sum + Number(m.unit_price || 0), 0);
 
     // --- Unified Submit Handler ---
     const handleSubmit = async (e) => {
@@ -220,9 +205,6 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
             return;
         }
 
-        // Determine what the user is trying to submit
-        // They must either provide valid materials OR a valid bill. 
-        // We filter out empty materials before deciding.
         const validMaterials = materials.filter(m => m.name && m.unit_price > 0);
         const isSubmittingExpense = validMaterials.length > 0;
         const isSubmittingBill = billName && billUploadData.url;
@@ -232,19 +214,19 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
             return;
         }
 
-        setLoading(true);
+        setSubmitting(true);
         setError("");
 
         try {
-            const promises = [];
-
-            // 1. Submit Expenses if valid
-            if (isSubmittingExpense) {
-                const expensePromise = fetch("/api/payment-requests", {
-                    method: "POST",
+            // 1. Submit Payment Request
+            let paymentRequestRes;
+            
+            if (initialData) {
+                paymentRequestRes = await fetch(`/api/payment-requests/${initialData.id}`, {
+                    method: "PATCH",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        project_id: selectedProject,
+                        project_id: parseInt(selectedProject),
                         materials: validMaterials.map(m => ({
                             name: m.name,
                             quantity: Number(m.quantity),
@@ -253,36 +235,54 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                             image_file_id: m.image_file_id,
                             worker_id: m.worker_id
                         })),
-                        total_amount: validMaterials.reduce((sum, m) => sum + (m.quantity * m.unit_price), 0)
+                        total_amount: validMaterials.reduce((sum, m) => sum + Number(m.unit_price), 0)
                     })
-                }).then(async (res) => {
-                    if (!res.ok) {
-                        const data = await res.json();
-                        throw new Error(data.error || "Failed to submit expense request");
-                    }
                 });
-                promises.push(expensePromise);
-
-                // Handle reminders for materials that have it enabled
-                validMaterials.forEach(m => {
-                    if (m.worker_id && m.is_recurring && m.reminder_day) {
-                        const reminderPromise = fetch("/api/reminders", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                worker_id: m.worker_id,
-                                project_id: selectedProject,
-                                amount: Number(m.unit_price) * Number(m.quantity),
-                                day_of_month: m.reminder_day,
-                                reason: m.name
-                            })
-                        });
-                        promises.push(reminderPromise);
-                    }
+            } else {
+                paymentRequestRes = await fetch("/api/payment-requests", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        project_id: parseInt(selectedProject),
+                        materials: validMaterials.map(m => ({
+                            name: m.name,
+                            quantity: Number(m.quantity),
+                            unit_price: Number(m.unit_price),
+                            image_url: m.image_url,
+                            image_file_id: m.image_file_id,
+                            worker_id: m.worker_id
+                        })),
+                        total_amount: validMaterials.reduce((sum, m) => sum + Number(m.unit_price), 0)
+                    })
                 });
             }
 
-            // 2. Submit Bill if valid
+            if (!paymentRequestRes.ok) {
+                const data = await paymentRequestRes.json();
+                throw new Error(data.error || "Failed to submit request.");
+            }
+
+            // 2. Submit Reminders if there are any
+            const remindersToSubmit = validMaterials.filter(m => m.reminder_day);
+            if (remindersToSubmit.length > 0) {
+                const reminderPromises = remindersToSubmit.map(m => {
+                    return fetch("/api/reminders", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            worker_id: m.worker_id,
+                            project_id: selectedProject,
+                            amount: Number(m.unit_price),
+                            day_of_month: m.reminder_day,
+                            reason: m.name
+                        })
+                    });
+                });
+                
+                await Promise.all(reminderPromises);
+            }
+
+            // 3. Submit Bill if valid
             if (isSubmittingBill) {
                 const billPromise = fetch("/api/bills", {
                     method: "POST",
@@ -300,20 +300,10 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                         throw new Error(data.error || "Failed to save bill");
                     }
                 });
-                promises.push(billPromise);
+                await billPromise;
             }
 
-            // Wait for all active requests
-            await Promise.all(promises);
-
-            // Success handling
             setShowSuccess(true);
-            setMaterials([{ name: "", quantity: 1, unit_price: 0, image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
-            setBillName("");
-            setBillAmount("");
-            setBillPreviewUrl(null);
-            setBillUploadData({ url: "", fileId: "" });
-            setSelectedProject("");
             
             setTimeout(() => {
                 setShowSuccess(false);
@@ -324,13 +314,13 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
             console.error(err);
             setError(err.message || "An error occurred during submission");
         } finally {
-            setLoading(false);
+            setSubmitting(false);
         }
     };
 
     return (
         <form onSubmit={handleSubmit} className="glass-card fade-up" style={{ padding: "32px", marginBottom: "32px" }}>
-            <h2 className="section-title">New Expense & Bill Request</h2>
+            <h2 className="section-title">{initialData ? "Edit Expense Request" : "New Expense & Bill Request"}</h2>
 
             {showSuccess && (
                 <div className="alert-success" style={{ marginBottom: "20px" }}>
@@ -340,7 +330,6 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
 
             {error && <div className="alert-error" style={{ marginBottom: "20px" }}>❌ {error}</div>}
 
-            {/* --- Project Selection (Shared) --- */}
             <div style={{ marginBottom: "24px", color: "black" }}>
                 <label className="stat-label">Project</label>
                 <select
@@ -365,13 +354,11 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                 </select>
             </div>
 
-            {/* --- Expenses & Materials Section --- */}
             <div style={{ marginBottom: "32px" }}>
                 <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px", color: "var(--text)" }}>Add Expenses & Materials</h3>
                 {materials.map((m, index) => (
                     <div key={index} style={{ marginBottom: "16px", padding: "16px", background: "rgba(0,0,0,0.02)", borderRadius: "12px", border: "1px solid rgba(0,0,0,0.05)" }}>
                         
-                        {/* Worker Assignment */}
                         <div style={{ marginBottom: "12px" }}>
                             <Popover open={workerSearchOpen[index]} onOpenChange={(open) => setWorkerSearchOpen(prev => ({ ...prev, [index]: open }))}>
                                 <PopoverTrigger asChild>
@@ -421,7 +408,6 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                             </Popover>
                         </div>
 
-                        {/* Suggestions Carousel */}
                         {m.worker_id && suggestions[m.worker_id] && suggestions[m.worker_id].length > 0 && (
                             <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "12px", scrollbarWidth: "none" }} className="no-scrollbar">
                                 <span style={{ fontSize: "12px", color: "var(--text-muted)", display: "flex", alignItems: "center" }}>Suggestions:</span>
@@ -473,7 +459,7 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                             <input
                                 type="number"
                                 step="0.01"
-                                placeholder="Price"
+                                placeholder="Amount"
                                 className="input-field"
                                 style={{ flex: "1 1 100px" }}
                                 value={m.unit_price}
@@ -490,7 +476,6 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                             )}
                         </div>
 
-                        {/* Image Upload/Capture Section */}
                         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                             {m.image_url ? (
                                 <div style={{ position: "relative", width: "60px", height: "60px", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border)" }}>
@@ -535,7 +520,6 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                             {!m.image_url && <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>* Photo of material/receipt is recommended</span>}
                         </div>
 
-                        {/* Recurring Reminder Section */}
                         {m.worker_id && (
                             <div style={{ marginTop: "16px", padding: "12px", background: "rgba(59, 130, 246, 0.05)", borderRadius: "8px", border: "1px solid rgba(59, 130, 246, 0.1)" }}>
                                 <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "13px", fontWeight: 500, color: "var(--text)" }}>
@@ -590,102 +574,6 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                 </button>
             </div>
 
-            {/* --- General Bill Section --- */}
-            {/* <div className="divider" style={{ margin: "24px 0", borderTop: "1px solid var(--border)" }} />
-            
-            <div style={{ marginBottom: "32px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: 600, marginBottom: "16px", color: "var(--text)" }}>Add General Bill / Invoice Image</h3>
-                
-                <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
-                    <div style={{ flex: "2 1 200px" }}>
-                        <label className="stat-label">Description / Bill Name</label>
-                        <input 
-                            type="text" 
-                            className="input-field"
-                            placeholder="e.g. Site B - Transport Bill"
-                            value={billName}
-                            onChange={(e) => setBillName(e.target.value)}
-                        />
-                    </div>
-                    <div style={{ flex: "1 1 100px" }}>
-                        <label className="stat-label">Amount (Optional)</label>
-                        <input 
-                            type="number" 
-                            step="0.01"
-                            className="input-field"
-                            placeholder="₹"
-                            value={billAmount}
-                            onChange={(e) => setBillAmount(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                <div style={{ marginBottom: "16px" }}>
-                    <label className="stat-label">Bill / QR Image</label>
-                    <div style={{ 
-                        marginTop: "8px", 
-                        border: "2px dashed var(--border)", 
-                        borderRadius: "12px", 
-                        padding: "24px", 
-                        textAlign: "center",
-                        background: "rgba(255,255,255,0.4)"
-                    }}>
-                        {billPreviewUrl ? (
-                            <div style={{ position: "relative", width: "100%", maxWidth: "300px", margin: "0 auto" }}>
-                                <Image 
-                                    src={billPreviewUrl} 
-                                    alt="Preview" 
-                                    width={300} 
-                                    height={200} 
-                                    style={{ borderRadius: "10px", objectFit: "cover" }} 
-                                />
-                                <button 
-                                    type="button"
-                                    onClick={() => { setBillPreviewUrl(null); setBillUploadData({ url: "", fileId: "" }); }}
-                                    style={{ 
-                                        position: "absolute", 
-                                        top: "-10px", 
-                                        right: "-10px", 
-                                        background: "var(--danger)", 
-                                        color: "white", 
-                                        border: "none", 
-                                        borderRadius: "50%", 
-                                        width: "24px", 
-                                        height: "24px", 
-                                        cursor: "pointer",
-                                        boxShadow: "0 2px 8px rgba(0,0,0,0.2)"
-                                    }}
-                                >
-                                    ✕
-                                </button>
-                            </div>
-                        ) : (
-                            <div style={{ position: "relative" }}>
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    capture="environment"
-                                    onChange={handleBillImageUpload}
-                                    style={{ display: "none" }}
-                                    id="bill-upload"
-                                    disabled={isUploadingBill}
-                                />
-                                <label htmlFor="bill-upload" className="btn-ghost" style={{ 
-                                    cursor: isUploadingBill ? "not-allowed" : "pointer", 
-                                    display: "inline-flex", 
-                                    alignItems: "center", 
-                                    gap: "8px",
-                                    padding: "12px 24px",
-                                    opacity: isUploadingBill ? 0.6 : 1
-                                }}>
-                                    {isUploadingBill ? "⌛ Uploading..." : "📷 Choose Image / Take Photo"}
-                                </label>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div> */}
-
             {showCamera && (
                 <CameraCapture
                     onCapture={(dataUrl) => handleMaterialImageUpload(activeMaterialIndex, dataUrl)}
@@ -698,7 +586,6 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
 
             <div className="divider" style={{ margin: "24px 0", borderTop: "1px solid var(--border)" }} />
 
-            {/* --- Footer & Submit --- */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
                 <div>
                     <span className="stat-label">Total Material Amount</span>
@@ -710,9 +597,9 @@ export default function UnifiedExpenseBillForm({ onSuccess }) {
                     type="submit"
                     className="btn-primary"
                     style={{ width: "auto", minWidth: "200px" }}
-                    disabled={loading || isUploadingBill || uploadingMaterial !== null}
+                    disabled={submitting || uploadingMaterial !== null}
                 >
-                    {loading ? <span className="spinner"></span> : "Submit Request"}
+                    {submitting ? (initialData ? "Updating..." : "Submitting...") : (initialData ? "Update Request" : "Submit Request")}
                 </button>
             </div>
         </form>

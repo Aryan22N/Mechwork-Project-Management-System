@@ -13,6 +13,7 @@ export async function GET(req) {
         const limit = limitParam ? parseInt(limitParam) : 100;
         const statusParam = searchParams.get('status');
         const projectParam = searchParams.get('project');
+        const ownParam = searchParams.get('own');
 
         const user = await getUser();
         if (!user) {
@@ -29,7 +30,25 @@ export async function GET(req) {
                 take: limit
             });
         } else if (hasRole(user, "PROJECT_MANAGER")) {
-            const pmWhere = {};
+            if (ownParam === 'true') {
+                const pmWhere = { supervisor_id: user.id };
+                if (statusParam && statusParam !== "ALL") {
+                    pmWhere.status = statusParam;
+                }
+                if (projectParam) pmWhere.project_id = parseInt(projectParam);
+
+                requests = await prisma.paymentRequest.findMany({
+                    where: pmWhere,
+                    include: { 
+                        project: true, 
+                        materials: true, 
+                        supervisor: { select: { name: true } }
+                    },
+                    orderBy: { created_at: "desc" },
+                    take: limit
+                });
+            } else {
+                const pmWhere = {};
             if (statusParam && statusParam !== "ALL") {
                 pmWhere.status = statusParam;
             } else if (!statusParam) {
@@ -80,7 +99,8 @@ export async function GET(req) {
                 supervisor: { name: c._supervisor_names.join(", ") }
             }));
             
-            requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            }
         } else if (hasRole(user, "SUPER_ADMIN")) {
             const adminWhere = {};
             if (statusParam && statusParam !== "ALL") adminWhere.status = statusParam;
