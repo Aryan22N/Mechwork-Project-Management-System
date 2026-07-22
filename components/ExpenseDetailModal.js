@@ -88,6 +88,11 @@ export default function ExpenseDetailModal({ isOpen, onClose, request, role }) {
                                         <div style={styles.materialMeta}>
                                             Qty: {m.quantity} • Price: ₹{parseFloat(m.unit_price).toLocaleString()}
                                         </div>
+                                        {m.description && (
+                                            <div style={styles.materialDescription}>
+                                                {m.description}
+                                            </div>
+                                        )}
                                     </div>
                                     {m.image_url && (
                                         <div style={styles.materialImageContainer}>
@@ -239,6 +244,17 @@ const styles = {
     materialMeta: {
         fontSize: "13px",
         color: "#64748b"
+    },
+    materialDescription: {
+        fontSize: "13px",
+        color: "#475569",
+        marginTop: "4px",
+        padding: "6px 10px",
+        backgroundColor: "#f8fafc",
+        borderRadius: "6px",
+        borderLeft: "3px solid #cbd5e1",
+        lineHeight: 1.5,
+        whiteSpace: "pre-wrap"
     },
     materialImageContainer: {
         width: "50px",

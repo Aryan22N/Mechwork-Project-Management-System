@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req) {
     try {
         const user = await getUser();
-        if (!user || !hasRole(user, "SUPER_ADMIN")) {
+        if (!user || !hasRole(user, ["SUPER_ADMIN", "PROJECT_MANAGER"])) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -16,6 +16,9 @@ export async function GET(req) {
 
         const whereClause = { status: "ACTIVE" };
         if (projectId) whereClause.id = parseInt(projectId, 10);
+        if (user.role === "PROJECT_MANAGER") {
+            whereClause.managers = { some: { id: user.id } };
+        }
 
         const projects = await prisma.project.findMany({
             where: whereClause,

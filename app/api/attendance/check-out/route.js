@@ -6,7 +6,7 @@ import { calculateDistance } from "@/lib/geolocation";
 export async function POST(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== "SUPERVISOR") {
+        if (!user || (user.role !== "SUPERVISOR" && user.role !== "PROJECT_MANAGER")) {
             return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
         }
 
@@ -40,7 +40,7 @@ export async function POST(req) {
         }
 
         // Calculate Server Time - CheckIn
-        const MIN_WORKING_MINUTES = 1; // Testing value
+        const MIN_WORKING_MINUTES = 420; // 7 hours
         const MIN_WORKING_MS = MIN_WORKING_MINUTES * 60 * 1000;
         const now = new Date();
         const checkInTime = new Date(activeSession.checkInTime);
@@ -49,7 +49,7 @@ export async function POST(req) {
         if (workedMs < MIN_WORKING_MS) {
             return NextResponse.json({
                 success: false,
-                message: "Minimum working duration of 1 minute not completed."
+                message: "Minimum working duration of 7 hours not completed."
             }, { status: 400 });
         }
 

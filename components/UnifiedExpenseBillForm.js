@@ -25,7 +25,7 @@ export default function UnifiedExpenseBillForm({ onSuccess, initialData }) {
     const [showSuccess, setShowSuccess] = useState(false);
 
     // --- Expense / Material State ---
-    const [materials, setMaterials] = useState([{ name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
+    const [materials, setMaterials] = useState([{ name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "", description: "" }]);
     const [expenseHeads, setExpenseHeads] = useState([]);
     const [uploadingMaterial, setUploadingMaterial] = useState(null); // index of material being uploaded
     const [suggestions, setSuggestions] = useState({}); // { worker_id: ["Expense 1", "Expense 2"] }
@@ -63,7 +63,7 @@ export default function UnifiedExpenseBillForm({ onSuccess, initialData }) {
             }
 
             if (selectedProject !== prevProjectId) {
-                setMaterials([{ name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
+                setMaterials([{ name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "", description: "" }]);
                 setPrevProjectId(selectedProject);
             }
         } else {
@@ -75,7 +75,7 @@ export default function UnifiedExpenseBillForm({ onSuccess, initialData }) {
     useEffect(() => {
         if (!initialData) {
             setMaterials([
-                { name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }
+                { name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "", description: "" }
             ]);
         } else {
             setMaterials(initialData.materials.map(m => ({
@@ -87,7 +87,8 @@ export default function UnifiedExpenseBillForm({ onSuccess, initialData }) {
                 worker_id: m.worker_id || null,
                 worker_name: m.worker_name || "",
                 is_recurring: false,
-                reminder_day: ""
+                reminder_day: "",
+                description: m.description || ""
             })));
         }
     }, [initialData]);
@@ -146,7 +147,7 @@ export default function UnifiedExpenseBillForm({ onSuccess, initialData }) {
 
     // --- Material / Expense Handlers ---
     const addMaterial = () => {
-        setMaterials([...materials, { name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "" }]);
+        setMaterials([...materials, { name: "", quantity: 1, unit_price: "", image_url: "", image_file_id: "", worker_id: null, worker_name: "", is_recurring: false, reminder_day: "", description: "" }]);
     };
 
     const removeMaterial = (index) => {
@@ -233,7 +234,8 @@ export default function UnifiedExpenseBillForm({ onSuccess, initialData }) {
                             unit_price: Number(m.unit_price),
                             image_url: m.image_url,
                             image_file_id: m.image_file_id,
-                            worker_id: m.worker_id
+                            worker_id: m.worker_id,
+                            description: m.description || ""
                         })),
                         total_amount: validMaterials.reduce((sum, m) => sum + Number(m.unit_price), 0)
                     })
@@ -250,7 +252,8 @@ export default function UnifiedExpenseBillForm({ onSuccess, initialData }) {
                             unit_price: Number(m.unit_price),
                             image_url: m.image_url,
                             image_file_id: m.image_file_id,
-                            worker_id: m.worker_id
+                            worker_id: m.worker_id,
+                            description: m.description || ""
                         })),
                         total_amount: validMaterials.reduce((sum, m) => sum + Number(m.unit_price), 0)
                     })
@@ -474,6 +477,17 @@ export default function UnifiedExpenseBillForm({ onSuccess, initialData }) {
                                     ✕
                                 </button>
                             )}
+                        </div>
+
+                        <div style={{ marginBottom: "12px" }}>
+                            <textarea
+                                placeholder="Description (optional)"
+                                className="input-field"
+                                style={{ width: "100%", minHeight: "60px", resize: "vertical", fontFamily: "inherit", fontSize: "13px" }}
+                                value={m.description}
+                                onChange={(e) => updateMaterial(index, "description", e.target.value)}
+                                rows={2}
+                            />
                         </div>
 
                         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>

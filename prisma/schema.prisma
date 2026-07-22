@@ -110,6 +110,7 @@ model Material {
   name       String         @db.VarChar(100)
   quantity   Int
   unit_price Decimal        @db.Decimal(10, 2)
+  description String?       @db.Text
   image_url  String?        @db.Text
   image_file_id String?     @db.Text
   request    PaymentRequest @relation(fields: [request_id], references: [id])

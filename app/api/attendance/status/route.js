@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
     try {
         const user = await getUser();
-        if (!user || user.role !== "SUPERVISOR") {
+        if (!user || (user.role !== "SUPERVISOR" && user.role !== "PROJECT_MANAGER")) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -60,8 +60,8 @@ export async function GET() {
             });
         }
 
-        // Calculate remaining seconds for 1-minute requirement (Testing)
-        const MIN_WORKING_MINUTES = 1;
+        // Calculate remaining seconds for 7-hour shift requirement
+        const MIN_WORKING_MINUTES = 420;
         const MIN_WORKING_SECONDS = MIN_WORKING_MINUTES * 60;
         
         const now = new Date();

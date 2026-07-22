@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
     try {
         const user = await getUser();
-        if (!user || (user.role !== "SUPERVISOR" && user.role !== "SUPER_ADMIN")) {
+        if (!user || (user.role !== "SUPERVISOR" && user.role !== "SUPER_ADMIN" && user.role !== "PROJECT_MANAGER")) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

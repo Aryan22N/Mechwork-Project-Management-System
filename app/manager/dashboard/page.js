@@ -70,6 +70,9 @@ export default function ManagerDashboard() {
                 <Link href="/manager/dashboard/approvals" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
                     <span>✔️</span> Pending Approvals
                 </Link>
+                <Link href="/manager/attendance" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
+                    <span>📍</span> Attendance
+                </Link>
                 <Link href="/manager/workers" className="mobile-menu-link" onClick={() => setIsMenuOpen(false)}>
                     <span>👷</span> Worker Management
                 </Link>
@@ -226,6 +229,12 @@ export default function ManagerDashboard() {
                                 title="Worker Management"
                                 description="Manage your workforce, tracking expenses per worker."
                                 href="/manager/workers"
+                            />
+                            <DashboardCard
+                                icon="📍"
+                                title="Attendance"
+                                description="Check in and out of your project site with GPS verification."
+                                href="/manager/attendance"
                             />
 
                         </div>

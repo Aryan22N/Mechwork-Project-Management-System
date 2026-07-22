@@ -6,7 +6,7 @@ import { calculateDistance } from "@/lib/geolocation";
 export async function POST(req) {
     try {
         const user = await getUser();
-        if (!user || user.role !== "SUPERVISOR") {
+        if (!user || (user.role !== "SUPERVISOR" && user.role !== "PROJECT_MANAGER")) {
             return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
         }
 

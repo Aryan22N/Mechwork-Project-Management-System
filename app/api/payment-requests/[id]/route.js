@@ -82,6 +82,7 @@ export async function PATCH(req, { params }) {
                             name: m.name,
                             quantity: parseInt(m.quantity),
                             unit_price: parseFloat(m.unit_price),
+                            description: m.description || null,
                             image_url: m.image_url || null,
                             image_file_id: m.image_file_id || null,
                             worker_id: m.worker_id ? parseInt(m.worker_id) : null
