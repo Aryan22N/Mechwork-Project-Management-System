@@ -193,8 +193,8 @@ export default function SuperAdminDashboard() {
                             />
                             <DashboardCard
                                 icon="📍"
-                                title="Supervisor Attendance"
-                                description="Track daily attendance and working hours of supervisors."
+                                title="Attendance"
+                                description="Track daily attendance and working hours of supervisors & managers."
                                 href="/superadmin/attendance"
                             />
                             <DashboardCard

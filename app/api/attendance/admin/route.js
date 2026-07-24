@@ -15,6 +15,7 @@ export async function GET(req) {
         const month = searchParams.get("month"); // 1-12
         const year = searchParams.get("year");   // e.g. 2026
         const siteId = searchParams.get("siteId");
+        const role = searchParams.get("role");   // SUPERVISOR | PROJECT_MANAGER | all
 
         let whereClause = {};
 
@@ -30,6 +31,11 @@ export async function GET(req) {
 
         if (siteId && siteId !== "all") {
             whereClause.siteId = siteId;
+        }
+
+        // Filter by user role if specified
+        if (role && role !== "all") {
+            whereClause.user = { role: role };
         }
 
         const attendances = await prisma.attendance.findMany({

@@ -18,6 +18,7 @@ export default function SuperadminAttendancePage() {
     const [filterMonth, setFilterMonth] = useState(currentDate.getMonth() + 1); // 1-12
     const [filterYear, setFilterYear] = useState(currentDate.getFullYear());
     const [filterSiteId, setFilterSiteId] = useState("all");
+    const [filterRole, setFilterRole] = useState("SUPERVISOR"); // SUPERVISOR | PROJECT_MANAGER
 
     // View state
     const [viewMode, setViewMode] = useState("LOGS"); // SUMMARY | LOGS
@@ -43,7 +44,8 @@ export default function SuperadminAttendancePage() {
             const queryParams = new URLSearchParams({
                 month: filterMonth,
                 year: filterYear,
-                siteId: filterSiteId
+                siteId: filterSiteId,
+                role: filterRole
             });
             const res = await fetch(`/api/attendance/admin?${queryParams}`);
 
@@ -70,7 +72,7 @@ export default function SuperadminAttendancePage() {
 
     useEffect(() => {
         fetchAttendanceData();
-    }, [filterMonth, filterYear, filterSiteId]);
+    }, [filterMonth, filterYear, filterSiteId, filterRole]);
 
     const handleLogout = async () => {
         await fetch("/api/logout", { method: "POST" });
@@ -144,7 +146,9 @@ export default function SuperadminAttendancePage() {
                 <div className="fade-up" style={{ maxWidth: "1200px", margin: "0 auto" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginBottom: "32px" }}>
                         <div style={{ textAlign: "center", padding: "0 16px" }}>
-                            <h1 style={{ fontSize: "28px", fontWeight: "700", color: "var(--text)" }}>Supervisor Attendance 📍</h1>
+                            <h1 style={{ fontSize: "28px", fontWeight: "700", color: "var(--text)" }}>
+                                {filterRole === "PROJECT_MANAGER" ? "Manager" : "Supervisor"} Attendance 📍
+                            </h1>
                             <p style={{ color: "var(--text-muted)", marginTop: "8px" }}>Monitor workforce presence and completed shifts.</p>
                         </div>
 
@@ -152,6 +156,42 @@ export default function SuperadminAttendancePage() {
                         <div className="glass-panel" style={{ padding: "16px", borderRadius: "12px", display: "flex", flexWrap: "wrap", gap: "16px", alignItems: "center", justifyContent: "space-between" }}>
 
                             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                                {/* Role filter toggle */}
+                                <div style={{ display: "flex", gap: "0", background: "rgba(0,0,0,0.15)", borderRadius: "8px", padding: "3px", alignSelf: "center" }}>
+                                    <button
+                                        onClick={() => setFilterRole("SUPERVISOR")}
+                                        style={{
+                                            padding: "7px 16px",
+                                            borderRadius: "6px",
+                                            background: filterRole === "SUPERVISOR" ? "var(--primary)" : "transparent",
+                                            color: filterRole === "SUPERVISOR" ? "#fff" : "var(--text-muted)",
+                                            border: "none",
+                                            cursor: "pointer",
+                                            fontWeight: "600",
+                                            fontSize: "13px",
+                                            transition: "all 0.2s ease",
+                                            whiteSpace: "nowrap"
+                                        }}>
+                                        👷 Supervisor
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterRole("PROJECT_MANAGER")}
+                                        style={{
+                                            padding: "7px 16px",
+                                            borderRadius: "6px",
+                                            background: filterRole === "PROJECT_MANAGER" ? "var(--primary)" : "transparent",
+                                            color: filterRole === "PROJECT_MANAGER" ? "#fff" : "var(--text-muted)",
+                                            border: "none",
+                                            cursor: "pointer",
+                                            fontWeight: "600",
+                                            fontSize: "13px",
+                                            transition: "all 0.2s ease",
+                                            whiteSpace: "nowrap"
+                                        }}>
+                                        📋 Manager
+                                    </button>
+                                </div>
+
                                 <select
                                     className="form-input"
                                     style={{ width: "auto", minWidth: "150px" }}
@@ -261,7 +301,7 @@ export default function SuperadminAttendancePage() {
                                                 <thead>
                                                     <tr style={{ background: "rgba(255,255,255,0.02)", borderBottom: "1px solid var(--border)" }}>
                                                         <th style={{ padding: "16px", textAlign: "left", fontSize: "14px", fontWeight: "600", color: "var(--text-muted)" }}>Date</th>
-                                                        <th style={{ padding: "16px", textAlign: "left", fontSize: "14px", fontWeight: "600", color: "var(--text-muted)" }}>Supervisor</th>
+                                                        <th style={{ padding: "16px", textAlign: "left", fontSize: "14px", fontWeight: "600", color: "var(--text-muted)" }}>{filterRole === "PROJECT_MANAGER" ? "Manager" : "Supervisor"}</th>
                                                         <th style={{ padding: "16px", textAlign: "left", fontSize: "14px", fontWeight: "600", color: "var(--text-muted)" }}>Site</th>
                                                         <th style={{ padding: "16px", textAlign: "left", fontSize: "14px", fontWeight: "600", color: "var(--text-muted)" }}>Check-In</th>
                                                         <th style={{ padding: "16px", textAlign: "left", fontSize: "14px", fontWeight: "600", color: "var(--text-muted)" }}>Check-Out</th>
