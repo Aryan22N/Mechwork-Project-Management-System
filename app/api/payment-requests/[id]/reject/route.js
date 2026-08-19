@@ -27,6 +27,20 @@ export async function PATCH(req, { params }) {
             return NextResponse.json({ error: "Requests not found" }, { status: 404 });
         }
 
+        // Guard: each role can only reject requests at their own pipeline stage.
+        // This mirrors the status checks in the approve endpoint and prevents
+        // a manager from undoing an already-approved request, or a superadmin
+        // from bypassing the manager review step entirely.
+        if (hasRole(user, "PROJECT_MANAGER")) {
+            if (requests.some(r => r.status !== "PENDING_PM")) {
+                return NextResponse.json({ error: "Managers can only reject PENDING_PM requests" }, { status: 400 });
+            }
+        } else if (hasRole(user, "SUPER_ADMIN")) {
+            if (requests.some(r => r.status !== "PENDING_ADMIN")) {
+                return NextResponse.json({ error: "Admins can only reject PENDING_ADMIN requests" }, { status: 400 });
+            }
+        }
+
         // 1. Delete images from ImageKit
         const fileIdsToDelete = [];
         requests.forEach(request => {

@@ -12,7 +12,9 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
     const [lastActionTimes, setLastActionTimes] = useState({}); // { "id-action": timestamp }
     const [projects, setProjects] = useState([]);
     const [selectedProjectId, setSelectedProjectId] = useState(null);
-    const [statusFilter, setStatusFilter] = useState(role === "PROJECT_MANAGER" ? "PENDING_PM" : "ALL"); // Explicit states
+    const [statusFilter, setStatusFilter] = useState(
+        role === "PROJECT_MANAGER" ? "PENDING_PM" : role === "SUPER_ADMIN" ? "PENDING_ADMIN" : "ALL"
+    ); // Explicit states
     const [actionInProgress, setActionInProgress] = useState(null); // Track which request is being processed
     const [showAll, setShowAll] = useState(false); // For "View More" functionality
     const [expandedNotes, setExpandedNotes] = useState({}); // { requestId: boolean }
@@ -359,7 +361,11 @@ export default function PaymentRequestList({ refreshTrigger, role, limit = null,
             ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     {displayedRequests.map((req) => (
-                        <div key={req.isClubbed ? `${req.project_id}-${req.created_at}-${req.status}` : req.id} className="glass-card" style={{ padding: "24px", paddingTop: req.isClubbed ? "12px" : "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "20px", borderLeft: req.isClubbed ? "4px solid var(--primary)" : "none" }}>
+                        <div key={req.isClubbed
+                            ? (role === "PROJECT_MANAGER"
+                                ? `${req.project_id}-${req.status}-PM_GROUP`
+                                : `${req.project_id}-${new Date(req.created_at).toLocaleDateString("en-IN")}-${req.status}`)
+                            : req.id} className="glass-card" style={{ padding: "24px", paddingTop: req.isClubbed ? "12px" : "24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "20px", borderLeft: req.isClubbed ? "4px solid var(--primary)" : "none" }}>
                             <div style={{ flex: "1 1 300px", minWidth: "0" }}>
                                 {req.isClubbed && (
                                     <div style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", color: "var(--primary)", letterSpacing: "0.5px", marginBottom: "8px" }}>

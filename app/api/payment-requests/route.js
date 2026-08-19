@@ -51,61 +51,71 @@ export async function GET(req) {
                 const pmWhere = {
                     project: { managers: { some: { id: user.id } } }
                 };
-            if (statusParam && statusParam !== "ALL") {
-                pmWhere.status = statusParam;
-            } else if (!statusParam) {
-                pmWhere.status = "PENDING_PM";
-            }
-            if (projectParam) pmWhere.project_id = parseInt(projectParam);
-
-            requests = await prisma.paymentRequest.findMany({
-                where: pmWhere,
-                include: { 
-                    project: true, 
-                    materials: true, 
-                    supervisor: { select: { name: true } }
-                },
-                orderBy: { created_at: "desc" },
-                take: limit
-            });
-
-            // Project-wise clubbing for Manager
-            const clubbedMap = {};
-            for (const req of requests) {
-                const clubKey = `${req.project_id}-${req.status}-PM_GROUP`;
-                if (!clubbedMap[clubKey]) {
-                    clubbedMap[clubKey] = {
-                        ...req,
-                        isClubbed: true,
-                        requestIds: [req.id],
-                        _materials: [...req.materials],
-                        _total_amount: parseFloat(req.total_amount),
-                        _supervisor_names: [req.supervisor?.name || "Self"],
-                        subRequests: [req]
-                    };
+                if (statusParam && statusParam !== "ALL") {
+                    pmWhere.status = statusParam;
                 } else {
-                    clubbedMap[clubKey].requestIds.push(req.id);
-                    clubbedMap[clubKey]._materials.push(...req.materials);
-                    clubbedMap[clubKey]._total_amount += parseFloat(req.total_amount);
-                    if (req.supervisor?.name && !clubbedMap[clubKey]._supervisor_names.includes(req.supervisor.name)) {
-                        clubbedMap[clubKey]._supervisor_names.push(req.supervisor.name);
-                    }
-                    clubbedMap[clubKey].subRequests.push(req);
+                    // Default: only show requests waiting for manager review
+                    pmWhere.status = "PENDING_PM";
                 }
-            }
+                if (projectParam) pmWhere.project_id = parseInt(projectParam);
 
-            requests = Object.values(clubbedMap).map(c => ({
-                ...c,
-                materials: c._materials,
-                total_amount: c._total_amount,
-                supervisor: { name: c._supervisor_names.join(", ") }
-            }));
-            
+                requests = await prisma.paymentRequest.findMany({
+                    where: pmWhere,
+                    include: { 
+                        project: true, 
+                        materials: true, 
+                        supervisor: { select: { name: true } }
+                    },
+                    orderBy: { created_at: "desc" },
+                    take: limit
+                });
+
+                // Project-wise clubbing for Manager
+                const clubbedMap = {};
+                for (const req of requests) {
+                    const clubKey = `${req.project_id}-${req.status}-PM_GROUP`;
+                    if (!clubbedMap[clubKey]) {
+                        clubbedMap[clubKey] = {
+                            ...req,
+                            isClubbed: true,
+                            requestIds: [req.id],
+                            _materials: [...req.materials],
+                            _total_amount: parseFloat(req.total_amount),
+                            _supervisor_names: [req.supervisor?.name || "Self"],
+                            subRequests: [req]
+                        };
+                    } else {
+                        clubbedMap[clubKey].requestIds.push(req.id);
+                        clubbedMap[clubKey]._materials.push(...req.materials);
+                        clubbedMap[clubKey]._total_amount += parseFloat(req.total_amount);
+                        if (req.supervisor?.name && !clubbedMap[clubKey]._supervisor_names.includes(req.supervisor.name)) {
+                            clubbedMap[clubKey]._supervisor_names.push(req.supervisor.name);
+                        }
+                        clubbedMap[clubKey].subRequests.push(req);
+                    }
+                }
+
+                requests = Object.values(clubbedMap).map(c => ({
+                    ...c,
+                    materials: c._materials,
+                    total_amount: c._total_amount,
+                    supervisor: { name: c._supervisor_names.join(", ") }
+                }));
+
                 requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             }
         } else if (hasRole(user, "SUPER_ADMIN")) {
             const adminWhere = {};
-            if (statusParam && statusParam !== "ALL") adminWhere.status = statusParam;
+            if (statusParam && statusParam !== "ALL") {
+                adminWhere.status = statusParam;
+            } else if (!statusParam) {
+                // No status param sent → default to PENDING_ADMIN (approvals page).
+                // This prevents raw PENDING_PM requests from appearing in the
+                // superadmin approvals view before a manager has reviewed them.
+                adminWhere.status = "PENDING_ADMIN";
+            }
+            // If statusParam === "ALL" → no filter applied.
+            // The history page sends explicit status=ALL to get the full record.
             if (projectParam) adminWhere.project_id = parseInt(projectParam);
 
             requests = await prisma.paymentRequest.findMany({

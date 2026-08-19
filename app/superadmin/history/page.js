@@ -29,7 +29,9 @@ export default function PaymentHistory() {
     const fetchHistory = async () => {
         try {
             setLoading(true);
-            const url = `/api/payment-requests?limit=2000${selectedProjectId ? `&project=${selectedProjectId}` : ''}${statusFilter !== "ALL" ? `&status=${statusFilter}` : ''}`;
+            // Always send status explicitly: "ALL" = no status filter (full history),
+            // specific status = filtered. Never omit it, or the backend defaults to PENDING_ADMIN.
+            const url = `/api/payment-requests?limit=2000&status=${statusFilter}${selectedProjectId ? `&project=${selectedProjectId}` : ''}`;
             const res = await fetch(url);
             const data = await res.json();
             setRequests(Array.isArray(data) ? data : []);
