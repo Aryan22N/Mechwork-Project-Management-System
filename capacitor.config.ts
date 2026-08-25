@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   appName: 'Solar Management',
   webDir: 'capacitor-dummy',
   server: {
-    url: process.env.CAPACITOR_SERVER_URL || 'https://your-solar-domain.com',
+    url: process.env.CAPACITOR_SERVER_URL || 'https://solar-project-dashboard.vercel.app/',
     cleartext: isDev,
   },
   android: {
